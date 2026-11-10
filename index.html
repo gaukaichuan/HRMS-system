@@ -19,7 +19,6 @@
         <button class="nav-item active" data-view="dashboard"><span>▦</span> Dashboard</button>
         <button class="nav-item" data-view="employees"><span>♙</span> Employees</button>
         <button class="nav-item" data-view="attendance"><span>◷</span> Attendance</button>
-        <button class="nav-item" data-view="clock"><span>◎</span> Clock in / out</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="prototype-note"><span class="note-dot"></span><div><strong>Prototype mode</strong><small>Sample data only</small></div></div>
@@ -34,7 +33,7 @@
       </header>
 
       <section class="view active" id="view-dashboard">
-        <div class="page-heading"><div><p class="eyebrow">TUESDAY · OVERVIEW</p><h1>Good morning, Alex <span>✦</span></h1><p class="subtitle">Here’s what’s happening with your team today.</p></div><button class="button button-primary" data-go="employees">＋ Add employee</button></div>
+        <div class="page-heading"><div><p class="eyebrow">TEAM OVERVIEW</p><h1>Good morning, Alex <span>✦</span></h1><p class="subtitle">Here’s what’s happening with your team today.</p></div><button class="button button-primary" data-go="employees">＋ Add employee</button></div>
         <div class="stat-grid">
           <article class="stat-card"><div class="stat-top"><span>Total employees</span><span class="stat-icon purple">♙</span></div><div class="stat-value">128</div><div class="stat-foot"><span class="trend">↗ 4.8%</span> vs. last month</div></article>
           <article class="stat-card"><div class="stat-top"><span>Present today</span><span class="stat-icon green">✓</span></div><div class="stat-value">94 <small>/ 115</small></div><div class="stat-foot"><span class="status-pill green-pill">82% attendance</span></div></article>
@@ -49,11 +48,11 @@
           </section>
           <aside class="panel side-panel"><div class="panel-heading"><div><h2>Quick actions</h2><p>Common HR tasks</p></div></div>
             <button class="quick-action" data-go="employees"><span class="quick-icon lilac">＋</span><span><strong>Add an employee</strong><small>Create a new employee profile</small></span><b>→</b></button>
-            <button class="quick-action" data-go="attendance"><span class="quick-icon mint">▤</span><span><strong>Review attendance</strong><small>Check punches and corrections</small></span><b>→</b></button>
-            <button class="quick-action" data-go="clock"><span class="quick-icon peach">◎</span><span><strong>Open clock station</strong><small>Demo clock-in experience</small></span><b>→</b></button>
-            <div class="privacy-callout"><span>ⓘ</span><p><strong>Biometric privacy first</strong><br>Face verification is not active in this prototype. Enrollment must be consent-based and have a non-biometric alternative.</p></div>
+            <button class="quick-action" data-go="attendance"><span class="quick-icon mint">▤</span><span><strong>Record attendance</strong><small>Manually add a clock-in or clock-out</small></span><b>→</b></button>
+            <div class="privacy-callout"><span>ⓘ</span><p><strong>Biometric privacy first</strong><br>Face verification is not active in this prototype. Any future enrollment must be consent-based and have a non-biometric alternative.</p></div>
           </aside>
         </div>
+        <section class="panel audit-panel" id="audit-panel"><div class="panel-heading"><div><h2>Recent activity</h2><p>Audit history of actions taken in this prototype</p></div><button class="text-button" id="clear-audit-log" type="button">Clear history</button></div><div id="audit-list" class="audit-list"></div></section>
       </section>
 
       <section class="view" id="view-employees">
@@ -64,22 +63,16 @@
       </section>
 
       <section class="view" id="view-attendance">
-        <div class="page-heading"><div><p class="eyebrow">TIME &amp; ATTENDANCE</p><h1>Attendance</h1><p class="subtitle">Review daily punches and attendance status.</p></div><button class="button button-secondary" id="download-report">↓ Export report</button></div>
+        <div class="page-heading"><div><p class="eyebrow">TIME &amp; ATTENDANCE</p><h1>Attendance</h1><p class="subtitle">Review attendance and record manual clock-in/out times.</p></div><div class="attendance-actions"><button class="button button-secondary" id="record-clock-out">＋ Record clock out</button><button class="button button-primary" id="record-clock-in">＋ Record clock in</button></div></div>
         <section class="panel"><div class="toolbar attendance-toolbar"><div class="date-picker"><span>▣</span><input type="date" id="attendance-date" aria-label="Attendance date"></div><div class="filter-chips"><span class="filter-chip selected">All records</span><span class="filter-chip">Present</span><span class="filter-chip">Late</span><span class="filter-chip">Incomplete</span></div></div>
           <div class="table-wrap"><table><thead><tr><th>EMPLOYEE</th><th>DATE</th><th>CLOCK IN</th><th>CLOCK OUT</th><th>METHOD</th><th>STATUS</th></tr></thead><tbody id="attendance-rows"></tbody></table></div>
-          <div class="table-footer"><span>Demo records only. Data is not saved to a server.</span><button class="text-button" id="request-correction">Request a correction →</button></div>
+          <div class="table-footer"><span>Prototype records are saved in this browser only.</span><button class="text-button" id="request-correction">Request a correction →</button></div>
         </section>
-      </section>
-
-      <section class="view" id="view-clock">
-        <div class="page-heading"><div><p class="eyebrow">EMPLOYEE TIME CLOCK</p><h1>Clock in / out</h1><p class="subtitle">A preview of the employee clock station.</p></div><span class="status-pill neutral-pill">DEMO ONLY</span></div>
-        <div class="clock-layout"><section class="panel clock-card"><div class="clock-heading"><span class="camera-symbol">◎</span><h2>Verify your identity</h2><p>Face recognition is a planned feature, not implemented here.</p></div><div class="camera-preview"><div class="camera-frame"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="face-placeholder">☺</span></div><span class="camera-caption">Camera preview is disabled in this prototype</span></div><label class="demo-select-label" for="demo-employee">Select a sample employee to preview</label><select id="demo-employee" class="select-input"><option value="Jordan Lee">Jordan Lee · EMP-0042</option><option value="Maya Patel">Maya Patel · EMP-0038</option><option value="Sam Rivera">Sam Rivera · EMP-0051</option></select><button class="button button-primary clock-button" id="demo-clock">Demo clock in</button><div class="manual-note">Need another way to clock? <button id="manual-punch">Request a manual punch</button></div><div class="clock-feedback" id="clock-feedback" aria-live="polite"></div></section>
-          <aside class="panel clock-info"><h2>How clocking will work</h2><ol><li><span>1</span><div><strong>Give informed consent</strong><small>Employees choose whether to enroll in face verification.</small></div></li><li><span>2</span><div><strong>Verify at the clock station</strong><small>A secure verification result is sent to the server.</small></div></li><li><span>3</span><div><strong>Record the punch</strong><small>The server records the official time and method.</small></div></li></ol><div class="privacy-callout"><span>♧</span><p><strong>Alternative always available</strong><br>Provide a manual attendance option for camera, accessibility, or verification issues.</p></div></aside></div>
       </section>
       <footer class="app-footer"><span>PeopleDesk HRMS · Phase 1 prototype</span><span>Sample data · No biometric processing</span></footer>
     </main>
   </div>
   <script src="app.js"></script>
-  <script src="master-data-ui.js"></script>
+  <script src="hrms-enhancements.js"></script>
 </body>
 </html>
