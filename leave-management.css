@@ -1,27 +1,27 @@
 /* PeopleDesk leave enhancements. Existing app styles are preserved. */
 
-#view-leave,
+:is(#view-leave, #view-leave-calendar),
 .leave-dialog {
   font-family: 'DM Sans', Arial, sans-serif;
   color: #26324a;
 }
 
-#view-leave .page-heading h1 {
+:is(#view-leave, #view-leave-calendar) .page-heading h1 {
   font-family: 'Manrope', 'DM Sans', Arial, sans-serif;
 }
 
-#view-leave .button,
+:is(#view-leave, #view-leave-calendar) .button,
 .leave-dialog .button,
 .leave-row-actions .row-action {
   font-family: 'DM Sans', Arial, sans-serif;
 }
 
-#view-leave h2 {
+:is(#view-leave, #view-leave-calendar) h2 {
   font-size: 17px;
   margin: 0;
 }
 
-#view-leave h3,
+:is(#view-leave, #view-leave-calendar) h3,
 .leave-dialog h3 {
   font-size: 14px;
   margin: 0 0 10px;
@@ -110,7 +110,7 @@
   margin-bottom: 18px;
 }
 
-#view-leave label,
+:is(#view-leave, #view-leave-calendar) label,
 .leave-dialog label {
   display: flex;
   flex-direction: column;
@@ -120,8 +120,8 @@
   color: #4d5a73;
 }
 
-#view-leave select,
-#view-leave input,
+:is(#view-leave, #view-leave-calendar) select,
+:is(#view-leave, #view-leave-calendar) input,
 .leave-dialog input,
 .leave-dialog select,
 .leave-dialog textarea {
@@ -138,7 +138,7 @@
   min-width: 0;
 }
 
-#view-leave input[type="checkbox"],
+:is(#view-leave, #view-leave-calendar) input[type="checkbox"],
 .leave-dialog input[type="checkbox"] {
   min-height: 0;
   width: 16px;
@@ -146,7 +146,7 @@
   accent-color: #7357ed;
 }
 
-#view-leave :is(input, select, button):focus-visible,
+:is(#view-leave, #view-leave-calendar) :is(input, select, button):focus-visible,
 .leave-dialog :is(input, select, textarea, button):focus-visible {
   outline: 3px solid #c2b5ff;
   outline-offset: 2px;
@@ -346,7 +346,7 @@
   min-height: 40px;
 }
 
-#view-leave .leave-check,
+:is(#view-leave, #view-leave-calendar) .leave-check,
 .leave-dialog .leave-check {
   flex-direction: row;
   align-items: center;
@@ -447,7 +447,7 @@
   background: #d39436;
 }
 
-#view-leave .table-footer {
+:is(#view-leave, #view-leave-calendar) .table-footer {
   white-space: normal;
   line-height: 1.7;
   font-size: 10px;
@@ -711,7 +711,7 @@
 }
 
 .leave-dialog button:disabled,
-#view-leave button:disabled {
+:is(#view-leave, #view-leave-calendar) button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -822,7 +822,7 @@ body:has(.leave-dialog[open]) {
     flex-shrink: 0;
   }
 
-  #view-leave .page-heading {
+  :is(#view-leave, #view-leave-calendar) .page-heading {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
@@ -905,5 +905,71 @@ body:has(.leave-dialog[open]) {
   .leave-app-heading,
   .leave-filter-grid {
     padding: 16px;
+  }
+}
+
+/* Compact balance controls for the list-only leave page. */
+
+:is(#view-leave, #view-leave-calendar) .leave-controls {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 16px;
+  gap: 12px;
+}
+
+:is(#view-leave, #view-leave-calendar) .leave-controls label {
+  font-size: 11px;
+}
+
+:is(#view-leave, #view-leave-calendar) #leave-employee {
+  min-width: 230px;
+}
+
+:is(#view-leave, #view-leave-calendar) .leave-controls .button {
+  min-height: 40px;
+}
+
+@media (max-width: 700px) {
+  :is(#view-leave, #view-leave-calendar) #leave-employee {
+    min-width: 0;
+  }
+}
+
+/* Standalone sidebar calendar tab. */
+
+.leave-calendar-sync-note {
+  margin: 0 0 20px;
+}
+
+.leave-calendar-filter-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 14px;
+  padding: 0 20px 14px;
+}
+
+.leave-calendar-filter-note {
+  padding: 0 20px;
+}
+
+.leave-calendar-reset {
+  margin: 10px 20px 18px;
+}
+
+.leave-calendar-panel {
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .leave-calendar-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .leave-calendar-filter-grid {
+    grid-template-columns: 1fr;
   }
 }
