@@ -122,7 +122,7 @@
       if (
         request.employeeId !== employeeId ||
         request.type !== type ||
-        !\['Pending', 'Approved'].includes(request.status)
+        !['Pending', 'Approved'].includes(request.status)
       ) {
         return;
       }
