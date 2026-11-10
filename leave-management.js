@@ -46,9 +46,7 @@
 
   const num = (n) => Number(n).toLocaleString(
     undefined,
-    {
-      maximumFractionDigits: 1
-    }
+    { maximumFractionDigits: 1 }
   );
 
   const localToday = () => {
@@ -99,6 +97,10 @@
   let year = Number(localToday().slice(0, 4));
   let calendarMonth = localToday().slice(0, 7);
 
+  const T = window.PeopleDeskCalendarTimeline;
+  let calendarMode = T ? 'week' : 'month';
+  let weekStart = T ? T.start(localToday(), true) : localToday();
+
   let filter = {
     all: true,
     search: '',
@@ -141,9 +143,7 @@
 
     const validated = R.validateState(next);
 
-    if (
-      localStorage.getItem(KEY) !== storedRaw
-    ) {
+    if (localStorage.getItem(KEY) !== storedRaw) {
       readStorage();
       render();
 
@@ -176,8 +176,7 @@
       read: false
     });
 
-    next.notifications =
-      next.notifications.slice(0, 100);
+    next.notifications = next.notifications.slice(0, 100);
   }
 
   const person = (request) =>
@@ -197,17 +196,13 @@
           employee.status === 'Active'
         )
       )
-      .map(
-        (employee) => ({ ...employee })
-      );
+      .map((employee) => ({ ...employee }));
 
     if (!activeOnly) {
       state.requests.forEach((request) => {
         if (
           !list.some(
-            (employee) => (
-              employee.id === request.employeeId
-            )
+            (employee) => employee.id === request.employeeId
           )
         ) {
           list.push({
@@ -255,9 +250,7 @@
 
   const policyFields = () =>
     Object.entries(R.TYPES)
-      .filter(
-        ([type]) => R.tracksBalance(type)
-      )
+      .filter(([type]) => R.tracksBalance(type))
       .map(([type, label]) => `
         <label>
           ${esc(label)} base (days)
@@ -549,7 +542,73 @@
             ></p>
           </div>
 
-          <div class="leave-month-controls">
+          <div class="tl-navigation">
+            <div
+              class="tl-view-switch"
+              role="group"
+              aria-label="Calendar view"
+            >
+              <button
+                type="button"
+                class="button button-secondary"
+                id="leave-view-week"
+                aria-pressed="true"
+              >
+                Team week
+              </button>
+
+              <button
+                type="button"
+                class="button button-secondary"
+                id="leave-view-month"
+                aria-pressed="false"
+              >
+                Month
+              </button>
+            </div>
+
+            <div
+              class="leave-month-controls"
+              id="leave-week-controls"
+            >
+              <button
+                type="button"
+                class="button button-secondary"
+                id="leave-week-prev"
+                aria-label="Previous week"
+              >←</button>
+
+              <label>
+                Week starting
+                <input
+                  type="date"
+                  id="leave-week-start"
+                  min="1900-01-01"
+                  max="9999-12-25"
+                >
+              </label>
+
+              <button
+                type="button"
+                class="button button-secondary"
+                id="leave-week-next"
+                aria-label="Next week"
+              >→</button>
+
+              <button
+                type="button"
+                class="button button-secondary"
+                id="leave-week-today"
+              >
+                Today
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="leave-month-controls"
+            id="leave-month-controls"
+          >
             <button
               type="button"
               class="button button-secondary"
@@ -577,6 +636,15 @@
         </div>
 
         <div class="leave-calendar-filter-grid">
+          <label class="tl-search-label">
+            Search employee
+            <input
+              id="leave-calendar-search"
+              type="search"
+              placeholder="Search name or employee ID"
+            >
+          </label>
+
           <label>
             Employee
             <select id="leave-calendar-employee"></select>
@@ -634,7 +702,12 @@
           </span>
         </div>
 
-        <div class="leave-calendar-scroll">
+        <div id="leave-team-timeline"></div>
+
+        <div
+          class="leave-calendar-scroll"
+          id="leave-month-grid-wrap"
+        >
           <div
             class="leave-calendar-grid"
             id="leave-calendar-grid"
@@ -644,21 +717,12 @@
     `;
   }
 
-  function makeDialog(
-    id,
-    title,
-    body,
-    submitLabel
-  ) {
+  function makeDialog(id, title, body, submitLabel) {
     const dialog = document.createElement('dialog');
 
     dialog.id = id;
     dialog.className = 'leave-dialog';
-
-    dialog.setAttribute(
-      'aria-labelledby',
-      `${id}-title`
-    );
+    dialog.setAttribute('aria-labelledby', `${id}-title`);
 
     dialog.innerHTML = `
       <form>
@@ -710,9 +774,7 @@
     dialog.addEventListener('click', (event) => {
       if (
         event.target === dialog ||
-        event.target.closest(
-          '[data-close], .dialog-close'
-        )
+        event.target.closest('[data-close], .dialog-close')
       ) {
         dialog.close();
       }
@@ -926,7 +988,6 @@
 
   const error = (dialog, message) => {
     const el = $('.leave-error', dialog);
-
     el.textContent = message;
     el.hidden = !message;
   };
@@ -955,13 +1016,8 @@
     let message = '';
 
     try {
-      if (filter.from) {
-        R.parseDate(filter.from);
-      }
-
-      if (filter.to) {
-        R.parseDate(filter.to);
-      }
+      if (filter.from) R.parseDate(filter.from);
+      if (filter.to) R.parseDate(filter.to);
 
       if (
         filter.from &&
@@ -976,7 +1032,6 @@
     }
 
     const el = $('#leave-filter-error');
-
     el.textContent = message;
     el.hidden = !message;
 
@@ -991,20 +1046,14 @@
       const query = filter.search.trim().toLowerCase();
 
       return (
-        (
-          filter.all ||
-          request.employeeId === selectedEmployee
-        ) &&
+        (filter.all || request.employeeId === selectedEmployee) &&
         (
           !query ||
           `${employee.name} ${request.employeeId}`
             .toLowerCase()
             .includes(query)
         ) &&
-        (
-          !filter.type ||
-          request.type === filter.type
-        ) &&
+        (!filter.type || request.type === filter.type) &&
         (
           !filter.department ||
           employee.department === filter.department
@@ -1025,14 +1074,8 @@
           calendarRange?.start ||
           `${year}-01-01`
         ) &&
-        (
-          !filter.from ||
-          request.end >= filter.from
-        ) &&
-        (
-          !filter.to ||
-          request.start <= filter.to
-        )
+        (!filter.from || request.end >= filter.from) &&
+        (!filter.to || request.start <= filter.to)
       );
     }).slice().reverse();
   }
@@ -1142,12 +1185,10 @@
             }
 
             const denominator = balance.entitlement || 1;
-
             const used = Math.min(
               100,
               balance.used / denominator * 100
             );
-
             const pending = Math.min(
               100 - used,
               balance.pending / denominator * 100
@@ -1218,16 +1259,10 @@
       'Local demo only; no login, role enforcement, shared storage, or email delivery. ' +
       'Working days: Monday–Friday, excluding configured public holidays. ' +
       'Half-days: ' +
-      (
-        state.policy.allowHalfDays
-          ? 'enabled'
-          : 'disabled'
-      ) +
+      (state.policy.allowHalfDays ? 'enabled' : 'disabled') +
       '. ' +
       Object.keys(state.policy.holidays)
-        .filter(
-          (date) => date.startsWith(`${year}-`)
-        ).length +
+        .filter((date) => date.startsWith(`${year}-`)).length +
       ` public holiday(s) configured for ${year}. ` +
       'Existing applications keep their original day calculation. ' +
       'No accrual or automatic carry-forward. ' +
@@ -1243,14 +1278,8 @@
           if (!storageError) {
             if (request.cancellation) {
               actions.push(
-                [
-                  'confirmCancel',
-                  'Approve cancellation'
-                ],
-                [
-                  'rejectCancel',
-                  'Decline cancellation'
-                ]
+                ['confirmCancel', 'Approve cancellation'],
+                ['rejectCancel', 'Decline cancellation']
               );
             } else {
               if (request.status === 'Pending') {
@@ -1261,9 +1290,7 @@
               }
 
               if (
-                ['Pending', 'Approved'].includes(
-                  request.status
-                )
+                ['Pending', 'Approved'].includes(request.status)
               ) {
                 actions.push([
                   'requestCancel',
@@ -1360,8 +1387,7 @@
     if (!calendarView) return;
 
     $('#leave-import-holidays').disabled =
-      !!storageError ||
-      !window.PeopleDeskHolidayImport;
+      !!storageError || !window.PeopleDeskHolidayImport;
 
     $('.leave-legend', calendarView).innerHTML =
       Object.entries(R.TYPES)
@@ -1378,6 +1404,35 @@
       `;
 
     $('#leave-month').value = calendarMonth;
+    $('#leave-calendar-search').value = filter.search;
+    $('#leave-view-week').disabled = !T;
+
+    calendarView.classList.toggle(
+      'is-team-week',
+      calendarMode === 'week'
+    );
+
+    $('#leave-view-week').setAttribute(
+      'aria-pressed',
+      String(calendarMode === 'week')
+    );
+
+    $('#leave-view-month').setAttribute(
+      'aria-pressed',
+      String(calendarMode === 'month')
+    );
+
+    $('#leave-week-controls').hidden =
+      calendarMode !== 'week';
+
+    $('#leave-month-controls').hidden =
+      calendarMode !== 'month';
+
+    $('#leave-team-timeline').hidden =
+      calendarMode !== 'week';
+
+    $('#leave-month-grid-wrap').hidden =
+      calendarMode !== 'month';
 
     $('#leave-calendar-storage-error').textContent =
       storageError;
@@ -1392,8 +1447,7 @@
     $('#leave-calendar-employee').value =
       filter.all ? '' : selectedEmployee;
 
-    $('#leave-calendar-type').value =
-      filter.type;
+    $('#leave-calendar-type').value = filter.type;
 
     $('#leave-calendar-department').innerHTML =
       $('#leave-department').innerHTML;
@@ -1401,27 +1455,20 @@
     $('#leave-calendar-department').value =
       filter.department;
 
-    $('#leave-calendar-status').value =
-      filter.status;
+    $('#leave-calendar-status').value = filter.status;
 
     const shared = [];
 
     if (filter.search) {
-      shared.push(
-        `Employee search: ${filter.search}`
-      );
+      shared.push(`Employee search: ${filter.search}`);
     }
 
     if (filter.from) {
-      shared.push(
-        `From: ${dateLabel(filter.from)}`
-      );
+      shared.push(`From: ${dateLabel(filter.from)}`);
     }
 
     if (filter.to) {
-      shared.push(
-        `To: ${dateLabel(filter.to)}`
-      );
+      shared.push(`To: ${dateLabel(filter.to)}`);
     }
 
     $('#leave-calendar-filter-note').textContent =
@@ -1435,16 +1482,85 @@
             'Employee, leave type, department and status filters are shared with the list.'
           );
 
-    const first = R.parseDate(
-      `${calendarMonth}-01`
-    );
+    if (calendarMode === 'week' && T) {
+      weekStart = T.start(weekStart);
 
-    const offset = (
-      first.getUTCDay() + 6
-    ) % 7;
+      const dates = T.dates(weekStart);
+      const invalidFilters = filterError();
 
-    const gridStart =
-      first.valueOf() - offset * R.DAY;
+      const matches = storageError || invalidFilters
+        ? []
+        : filteredRequests({
+            start: dates[0],
+            end: dates[6]
+          });
+
+      const activeMatches = matches.filter(
+        (request) => (
+          request.status === 'Pending' ||
+          request.status === 'Approved'
+        )
+      );
+
+      const query = filter.search.trim().toLowerCase();
+
+      const roster = storageError || invalidFilters
+        ? []
+        : employeeList().filter((employee) => (
+            (filter.all || employee.id === selectedEmployee) &&
+            (
+              !query ||
+              `${employee.name} ${employee.id}`
+                .toLowerCase()
+                .includes(query)
+            ) &&
+            (
+              !filter.department ||
+              employee.department === filter.department
+            ) &&
+            (
+              employee.status !== 'Removed' ||
+              activeMatches.some(
+                (request) => request.employeeId === employee.id
+              )
+            )
+          ));
+
+      const result = T.render({
+        startDate: weekStart,
+        employees: roster,
+        requests: activeMatches,
+        holidays: storageError ? {} : state.policy.holidays,
+        types: R.TYPES,
+        getUnits: (request) => R.requestUnits(request),
+        today: localToday(),
+        filter
+      });
+
+      $('#leave-team-timeline').innerHTML = result.html;
+      $('#leave-week-start').value = weekStart;
+
+      $('#leave-week-prev').disabled =
+        T.shift(weekStart, -1) === weekStart;
+
+      $('#leave-week-next').disabled =
+        T.shift(weekStart, 1) === weekStart;
+
+      $('#leave-calendar-title').textContent =
+        T.rangeLabel(weekStart);
+
+      $('#leave-calendar-count').textContent = storageError
+        ? 'Timeline unavailable until saved data can be read safely.'
+        : invalidFilters
+          ? $('#leave-filter-error').textContent
+          : `${result.employees} team member(s) · ${result.count} matching pending / approved application(s). Click a bar for details.`;
+
+      return;
+    }
+
+    const first = R.parseDate(`${calendarMonth}-01`);
+    const offset = (first.getUTCDay() + 6) % 7;
+    const gridStart = first.valueOf() - offset * R.DAY;
 
     const lower = Math.max(
       gridStart,
@@ -1465,9 +1581,7 @@
 
     const active = rows.filter(
       (request) => (
-        ['Pending', 'Approved'].includes(
-          request.status
-        )
+        ['Pending', 'Approved'].includes(request.status)
       )
     );
 
@@ -1475,14 +1589,8 @@
       (request) => (
         R.requestUnits(request).some((day) => (
           day.date.startsWith(calendarMonth) &&
-          (
-            !filter.from ||
-            day.date >= filter.from
-          ) &&
-          (
-            !filter.to ||
-            day.date <= filter.to
-          )
+          (!filter.from || day.date >= filter.from) &&
+          (!filter.to || day.date <= filter.to)
         ))
       )
     ).length;
@@ -1511,13 +1619,7 @@
       calendarMonth === '9999-12';
 
     const headings = [
-      'Mon',
-      'Tue',
-      'Wed',
-      'Thu',
-      'Fri',
-      'Sat',
-      'Sun'
+      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
     ].map((day) => `
       <div class="leave-weekday">
         ${day}
@@ -1542,26 +1644,16 @@
         }
 
         const date = R.isoDate(current);
-
-        const outside =
-          !date.startsWith(calendarMonth);
-
-        const holiday =
-          state.policy.holidays[date];
+        const outside = !date.startsWith(calendarMonth);
+        const holiday = state.policy.holidays[date];
 
         const events = active.filter(
           (request) => (
             R.requestUnits(request).some(
               (day) => day.date === date
             ) &&
-            (
-              !filter.from ||
-              date >= filter.from
-            ) &&
-            (
-              !filter.to ||
-              date <= filter.to
-            )
+            (!filter.from || date >= filter.from) &&
+            (!filter.to || date <= filter.to)
           )
         );
 
@@ -1623,11 +1715,7 @@
 
     $('#leave-count').textContent =
       `${rows.length} application(s) · ${year} · ` +
-      (
-        filter.all
-          ? 'All employees'
-          : 'Selected employee'
-      );
+      (filter.all ? 'All employees' : 'Selected employee');
 
     renderRows(rows);
 
@@ -1653,14 +1741,9 @@
         '';
     }
 
-    $('#leave-employee').innerHTML =
-      employeeOptions();
-
-    $('#leave-employee').value =
-      selectedEmployee;
-
-    $('#leave-year').value =
-      year;
+    $('#leave-employee').innerHTML = employeeOptions();
+    $('#leave-employee').value = selectedEmployee;
+    $('#leave-year').value = year;
 
     const departments = [
       ...new Set(
@@ -1672,15 +1755,11 @@
 
     $('#leave-department').innerHTML =
       '<option value="">All departments</option>' +
-      departments.map(
-        (department) => `
-          <option>${esc(department)}</option>
-        `
-      ).join('');
+      departments.map((department) => `
+        <option>${esc(department)}</option>
+      `).join('');
 
-    if (
-      !departments.includes(filter.department)
-    ) {
+    if (!departments.includes(filter.department)) {
       filter.department = '';
     }
 
@@ -1694,35 +1773,19 @@
         typeOptions(true);
     }
 
-    if (
-      !Object.hasOwn(R.TYPES, filter.type)
-    ) {
+    if (!Object.hasOwn(R.TYPES, filter.type)) {
       filter.type = '';
     }
 
-    $('#leave-department').value =
-      filter.department;
-
-    $('#leave-search').value =
-      filter.search;
-
-    $('#leave-type').value =
-      filter.type;
-
-    $('#leave-status').value =
-      filter.status;
-
-    $('#leave-from').value =
-      filter.from;
-
-    $('#leave-to').value =
-      filter.to;
-
-    $('#leave-all-employees').checked =
-      filter.all;
+    $('#leave-department').value = filter.department;
+    $('#leave-search').value = filter.search;
+    $('#leave-type').value = filter.type;
+    $('#leave-status').value = filter.status;
+    $('#leave-from').value = filter.from;
+    $('#leave-to').value = filter.to;
+    $('#leave-all-employees').checked = filter.all;
 
     const alert = $('#leave-storage-error');
-
     alert.textContent = storageError;
     alert.hidden = !storageError;
 
@@ -1731,9 +1794,7 @@
       !employees.some(
         (employee) => employee.status === 'Active'
       ) ||
-      !Object.keys(R.TYPES).some(
-        R.isTypeActive
-      );
+      !Object.keys(R.TYPES).some(R.isTypeActive);
 
     $('#leave-entitlements').disabled =
       !!storageError ||
@@ -1769,9 +1830,7 @@
         Object.entries(
           R.splitUnits(units)
         ).map(([requestYear, count]) => {
-          const type = String(
-            formData.get('type')
-          );
+          const type = String(formData.get('type'));
 
           const available = R.balance(
             state,
@@ -1789,29 +1848,20 @@
 
           return (
             `${requestYear}: ${num(count)} requested / ${num(available)} available` +
-            (
-              count > available
-                ? ' — insufficient balance'
-                : ''
-            )
+            (count > available ? ' — insufficient balance' : '')
           );
         }).join(' · ');
     } catch (error) {
-      $('#leave-preview').textContent =
-        error.message;
+      $('#leave-preview').textContent = error.message;
     }
   }
 
   $('#leave-apply').addEventListener('click', () => {
     const form = $('form', applyDialog);
-
     form.reset();
 
-    $('[name="type"]', form).innerHTML =
-      typeOptions();
-
-    $('[name="type"]', form).required =
-      true;
+    $('[name="type"]', form).innerHTML = typeOptions();
+    $('[name="type"]', form).required = true;
 
     $('[name="employeeId"]', form).innerHTML =
       employeeOptions(true);
@@ -1826,11 +1876,8 @@
         selectedEmployee;
     }
 
-    $('[name="start"]', form).value =
-      localToday();
-
-    $('[name="end"]', form).value =
-      localToday();
+    $('[name="start"]', form).value = localToday();
+    $('[name="end"]', form).value = localToday();
 
     $('[name="duration"]', form).innerHTML =
       '<option value="full">Full day(s)</option>' +
@@ -1848,20 +1895,11 @@
     applyDialog.showModal();
   });
 
-  $('form', applyDialog).addEventListener(
-    'input',
-    preview
-  );
-
-  $('form', applyDialog).addEventListener(
-    'change',
-    preview
-  );
+  $('form', applyDialog).addEventListener('input', preview);
+  $('form', applyDialog).addEventListener('change', preview);
 
   async function attachmentFrom(file) {
-    if (!file || !file.size) {
-      return null;
-    }
+    if (!file || !file.size) return null;
 
     if (
       file.size > 262144 ||
@@ -1886,16 +1924,7 @@
         )
       : file.type === 'image/png'
         ? (
-            [
-              137,
-              80,
-              78,
-              71,
-              13,
-              10,
-              26,
-              10
-            ].every(
+            [137, 80, 78, 71, 13, 10, 26, 10].every(
               (value, index) => bytes[index] === value
             )
           )
@@ -1911,23 +1940,17 @@
       );
     }
 
-    const data = await new Promise(
-      (resolve, reject) => {
-        const reader = new FileReader();
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
 
-        reader.onload = () =>
-          resolve(reader.result);
+      reader.onload = () => resolve(reader.result);
 
-        reader.onerror = () =>
-          reject(
-            new Error(
-              'Could not read the attachment.'
-            )
-          );
+      reader.onerror = () => reject(
+        new Error('Could not read the attachment.')
+      );
 
-        reader.readAsDataURL(file);
-      }
-    );
+      reader.readAsDataURL(file);
+    });
 
     const result = {
       name: file.name,
@@ -1937,7 +1960,6 @@
     };
 
     R.validateAttachment(result);
-
     return result;
   }
 
@@ -1945,7 +1967,6 @@
     'submit',
     async (event) => {
       event.preventDefault();
-
       if (submitting) return;
 
       submitting = true;
@@ -1958,45 +1979,19 @@
       submit.disabled = true;
 
       try {
-        const formData = new FormData(
-          event.currentTarget
-        );
+        const formData = new FormData(event.currentTarget);
 
         const draft = {
-          employeeId: String(
-            formData.get('employeeId')
-          ),
-
-          type: String(
-            formData.get('type')
-          ),
-
-          duration: String(
-            formData.get('duration')
-          ),
-
-          start: String(
-            formData.get('start')
-          ),
-
-          end: String(
-            formData.get('end')
-          ),
-
-          reason: String(
-            formData.get('reason')
-          ).trim(),
-
-          contact: String(
-            formData.get('contact')
-          ).trim()
+          employeeId: String(formData.get('employeeId')),
+          type: String(formData.get('type')),
+          duration: String(formData.get('duration')),
+          start: String(formData.get('start')),
+          end: String(formData.get('end')),
+          reason: String(formData.get('reason')).trim(),
+          contact: String(formData.get('contact')).trim()
         };
 
-        R.validateApplication(
-          state,
-          draft,
-          employees
-        );
+        R.validateApplication(state, draft, employees);
 
         const attachment = await attachmentFrom(
           formData.get('attachment')
@@ -2023,7 +2018,6 @@
           dayUnits: units,
           attachment,
           cancellation: null,
-
           history: [
             {
               status: 'Pending',
@@ -2035,7 +2029,6 @@
         };
 
         const next = clone();
-
         next.requests.push(request);
 
         addNotice(
@@ -2047,11 +2040,12 @@
         save(next);
 
         selectedEmployee = employee.id;
-
         year = +draft.start.slice(0, 4);
+        calendarMonth = draft.start.slice(0, 7);
 
-        calendarMonth =
-          draft.start.slice(0, 7);
+        if (T) {
+          weekStart = T.start(draft.start, true);
+        }
 
         applyDialog.close();
         render();
@@ -2060,10 +2054,7 @@
           'Application submitted locally. Pending days are reserved. A message was added to the local demo inbox; no email was sent.'
         );
       } catch (caught) {
-        error(
-          applyDialog,
-          caught.message
-        );
+        error(applyDialog, caught.message);
       } finally {
         submitting = false;
         submit.disabled = false;
@@ -2071,42 +2062,34 @@
     }
   );
 
-  $('#leave-employee').addEventListener(
-    'change',
-    (event) => {
-      selectedEmployee = event.target.value;
-      render();
+  $('#leave-employee').addEventListener('change', (event) => {
+    selectedEmployee = event.target.value;
+    render();
+  });
+
+  $('#leave-year').addEventListener('change', (event) => {
+    const value = +event.target.value;
+
+    if (
+      !event.target.value ||
+      !Number.isInteger(value) ||
+      value < 1900 ||
+      value > 9999
+    ) {
+      event.target.value = year;
+      feedback('Choose a year from 1900 to 9999.');
+      return;
     }
-  );
 
-  $('#leave-year').addEventListener(
-    'change',
-    (event) => {
-      const value = +event.target.value;
+    year = value;
+    calendarMonth = `${year}-${calendarMonth.slice(5)}`;
 
-      if (
-        !event.target.value ||
-        !Number.isInteger(value) ||
-        value < 1900 ||
-        value > 9999
-      ) {
-        event.target.value = year;
-
-        feedback(
-          'Choose a year from 1900 to 9999.'
-        );
-
-        return;
-      }
-
-      year = value;
-
-      calendarMonth =
-        `${year}-${calendarMonth.slice(5)}`;
-
-      render();
+    if (T) {
+      weekStart = T.start(`${calendarMonth}-01`);
     }
-  );
+
+    render();
+  });
 
   [
     ['leave-search', 'search', 'input'],
@@ -2116,13 +2099,10 @@
     ['leave-from', 'from', 'change'],
     ['leave-to', 'to', 'change']
   ].forEach(([id, key, eventName]) => {
-    $('#' + id).addEventListener(
-      eventName,
-      (event) => {
-        filter[key] = event.target.value;
-        renderApplications();
-      }
-    );
+    $('#' + id).addEventListener(eventName, (event) => {
+      filter[key] = event.target.value;
+      renderApplications();
+    });
   });
 
   $('#leave-all-employees').addEventListener(
@@ -2133,97 +2113,79 @@
     }
   );
 
-  $('#leave-reset-filters').addEventListener(
-    'click',
-    () => {
-      filter = {
-        all: true,
-        search: '',
-        type: '',
-        department: '',
-        status: '',
-        from: '',
-        to: ''
-      };
+  $('#leave-reset-filters').addEventListener('click', () => {
+    filter = {
+      all: true,
+      search: '',
+      type: '',
+      department: '',
+      status: '',
+      from: '',
+      to: ''
+    };
 
-      [
-        'leave-search',
-        'leave-type',
-        'leave-department',
-        'leave-status',
-        'leave-from',
-        'leave-to'
-      ].forEach((id) => {
-        $('#' + id).value = '';
-      });
+    [
+      'leave-search',
+      'leave-type',
+      'leave-department',
+      'leave-status',
+      'leave-from',
+      'leave-to'
+    ].forEach((id) => {
+      $('#' + id).value = '';
+    });
 
-      $('#leave-all-employees').checked =
-        true;
+    $('#leave-all-employees').checked = true;
+    renderApplications();
+  });
 
-      renderApplications();
-    }
-  );
+  $('#leave-entitlements').addEventListener('click', () => {
+    policyEmployee = selectedEmployee;
+    policyYear = year;
 
-  $('#leave-entitlements').addEventListener(
-    'click',
-    () => {
-      policyEmployee = selectedEmployee;
-      policyYear = year;
+    $('#leave-policy-context').textContent =
+      `${
+        employees.find(
+          (employee) => employee.id === policyEmployee
+        ).name
+      } · ${policyYear}. ` +
+      'Demo rules only; confirm HR policy before production.';
 
-      $('#leave-policy-context').textContent =
-        `${
-          employees.find(
-            (employee) => employee.id === policyEmployee
-          ).name
-        } · ${policyYear}. ` +
-        'Demo rules only; confirm HR policy before production.';
+    $('#leave-holiday-year').textContent = policyYear;
 
-      $('#leave-holiday-year').textContent =
-        policyYear;
+    $('.leave-form-grid', policyDialog).innerHTML =
+      policyFields();
 
-      $('.leave-form-grid', policyDialog).innerHTML =
-        policyFields();
-
-      Object.keys(R.TYPES)
-        .filter(R.tracksBalance)
-        .forEach((type) => {
-          $(
-            `[name="${type}"]`,
-            policyDialog
-          ).value = R.baseEntitlement(
+    Object.keys(R.TYPES)
+      .filter(R.tracksBalance)
+      .forEach((type) => {
+        $(`[name="${type}"]`, policyDialog).value =
+          R.baseEntitlement(
             state,
             policyEmployee,
             policyYear,
             type
           );
-        });
+      });
 
-      $('[name="carry"]', policyDialog).value =
-        state.carryForward[policyEmployee]?.[policyYear] ||
-        0;
+    $('[name="carry"]', policyDialog).value =
+      state.carryForward[policyEmployee]?.[policyYear] || 0;
 
-      $('[name="halfDays"]', policyDialog).checked =
-        state.policy.allowHalfDays;
+    $('[name="halfDays"]', policyDialog).checked =
+      state.policy.allowHalfDays;
 
-      $('[name="holidays"]', policyDialog).value =
-        Object.entries(state.policy.holidays)
-          .filter(
-            ([date]) => (
-              date.startsWith(`${policyYear}-`)
-            )
-          )
-          .sort(
-            ([a], [b]) => a.localeCompare(b)
-          )
-          .map(
-            ([date, label]) => `${date} | ${label}`
-          )
-          .join('\n');
+    $('[name="holidays"]', policyDialog).value =
+      Object.entries(state.policy.holidays)
+        .filter(
+          ([date]) => date.startsWith(`${policyYear}-`)
+        )
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, label]) => `${date} | ${label}`)
+        .join('\n');
 
-      error(policyDialog, '');
-      policyDialog.showModal();
-    }
-  );
+    error(policyDialog, '');
+    policyDialog.showModal();
+  });
 
   $('form', policyDialog).addEventListener(
     'submit',
@@ -2231,9 +2193,7 @@
       event.preventDefault();
 
       try {
-        const formData = new FormData(
-          event.currentTarget
-        );
+        const formData = new FormData(event.currentTarget);
 
         const values = Object.fromEntries(
           Object.keys(R.TYPES)
@@ -2244,9 +2204,7 @@
             ])
         );
 
-        const carried = Number(
-          formData.get('carry')
-        );
+        const carried = Number(formData.get('carry'));
 
         if (
           !employees.some(
@@ -2269,22 +2227,16 @@
         const holidays = Object.fromEntries(
           Object.entries(state.policy.holidays)
             .filter(
-              ([date]) => (
-                !date.startsWith(`${policyYear}-`)
-              )
+              ([date]) => !date.startsWith(`${policyYear}-`)
             )
         );
 
         const seen = new Set();
 
         for (
-          const line of String(
-            formData.get('holidays')
-          )
+          const line of String(formData.get('holidays'))
             .split(/\r?\n/)
-            .filter(
-              (value) => value.trim()
-            )
+            .filter((value) => value.trim())
         ) {
           const match = line.trim().match(
             /^(\d{4}-\d{2}-\d{2})\s*\|\s*(.+)$/
@@ -2318,29 +2270,16 @@
 
         const next = clone();
 
-        if (
-          !Object.hasOwn(
-            next.entitlements,
-            policyEmployee
-          )
-        ) {
+        if (!Object.hasOwn(next.entitlements, policyEmployee)) {
           next.entitlements[policyEmployee] = {};
         }
 
-        if (
-          !Object.hasOwn(
-            next.carryForward,
-            policyEmployee
-          )
-        ) {
+        if (!Object.hasOwn(next.carryForward, policyEmployee)) {
           next.carryForward[policyEmployee] = {};
         }
 
         next.entitlements[policyEmployee][policyYear] = {
-          ...(
-            next.entitlements[policyEmployee][policyYear] ||
-            {}
-          ),
+          ...(next.entitlements[policyEmployee][policyYear] || {}),
           ...values
         };
 
@@ -2348,14 +2287,11 @@
           carried;
 
         next.policy = {
-          allowHalfDays:
-            formData.get('halfDays') === 'on',
-
+          allowHalfDays: formData.get('halfDays') === 'on',
           holidays
         };
 
         save(next);
-
         policyDialog.close();
         render();
 
@@ -2363,10 +2299,7 @@
           'Policy saved. New applications use the new holiday calendar; existing day counts remain unchanged.'
         );
       } catch (caught) {
-        error(
-          policyDialog,
-          caught.message
-        );
+        error(policyDialog, caught.message);
       }
     }
   );
@@ -2444,9 +2377,7 @@
 
       <p class="leave-muted">
         ${
-          Object.entries(
-            R.requestAllocations(request)
-          )
+          Object.entries(R.requestAllocations(request))
             .map(
               ([requestYear, count]) => (
                 `${requestYear}: ${num(count)} days`
@@ -2490,10 +2421,7 @@
   };
 
   function handleAction(event) {
-    const button = event.target.closest(
-      '[data-leave-action]'
-    );
-
+    const button = event.target.closest('[data-leave-action]');
     if (!button) return;
 
     const request = state.requests.find(
@@ -2502,17 +2430,13 @@
 
     if (!request) return;
 
-    if (
-      button.dataset.leaveAction === 'details'
-    ) {
+    if (button.dataset.leaveAction === 'details') {
       showDetails(request);
       return;
     }
 
     decisionId = request.id;
-
-    decisionAction =
-      button.dataset.leaveAction;
+    decisionAction = button.dataset.leaveAction;
 
     $('#leave-decision-dialog-title').textContent =
       actionLabels[decisionAction];
@@ -2534,29 +2458,20 @@
             : ''
       );
 
-    $('[name="note"]', decisionDialog).value =
-      '';
+    $('[name="note"]', decisionDialog).value = '';
 
     $('[name="note"]', decisionDialog).required =
-      [
-        'reject',
-        'requestCancel',
-        'rejectCancel'
-      ].includes(decisionAction);
+      ['reject', 'requestCancel', 'rejectCancel']
+        .includes(decisionAction);
 
-    $(
-      'button[type="submit"]',
-      decisionDialog
-    ).textContent = actionLabels[decisionAction];
+    $('button[type="submit"]', decisionDialog).textContent =
+      actionLabels[decisionAction];
 
     error(decisionDialog, '');
     decisionDialog.showModal();
   }
 
-  $('#leave-rows').addEventListener(
-    'click',
-    handleAction
-  );
+  $('#leave-rows').addEventListener('click', handleAction);
 
   $('form', decisionDialog).addEventListener(
     'submit',
@@ -2564,9 +2479,7 @@
       event.preventDefault();
 
       try {
-        const formData = new FormData(
-          event.currentTarget
-        );
+        const formData = new FormData(event.currentTarget);
 
         const replacement = R.transition(
           state,
@@ -2587,22 +2500,16 @@
           )
         );
 
-        const last =
-          replacement.history.at(-1);
+        const last = replacement.history.at(-1);
 
         addNotice(
           next,
           replacement,
           `${replacement.employeeName}: ${R.TYPES[replacement.type]} — ` +
-          `${last.status}${
-            last.note
-              ? ': ' + last.note
-              : '.'
-          }`
+          `${last.status}${last.note ? ': ' + last.note : '.'}`
         );
 
         save(next);
-
         decisionDialog.close();
         render();
 
@@ -2610,163 +2517,128 @@
           `${last.status}. Balances recalculated; local inbox updated. No email was sent.`
         );
       } catch (caught) {
-        error(
-          decisionDialog,
-          caught.message
-        );
+        error(decisionDialog, caught.message);
       }
     }
   );
 
   function download(blob, filename) {
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
 
     link.href = url;
     link.download = filename;
 
     document.body.append(link);
-
     link.click();
     link.remove();
 
-    setTimeout(
-      () => URL.revokeObjectURL(url),
-      1000
-    );
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  detailsDialog.addEventListener(
-    'click',
-    (event) => {
-      const button = event.target.closest(
-        '#leave-download-attachment'
+  detailsDialog.addEventListener('click', (event) => {
+    const button = event.target.closest(
+      '#leave-download-attachment'
+    );
+
+    if (!button) return;
+
+    try {
+      const attachment = state.requests.find(
+        (request) => request.id === button.dataset.id
+      )?.attachment;
+
+      R.validateAttachment(attachment);
+      if (!attachment) return;
+
+      const base64 = attachment.data.slice(
+        attachment.data.indexOf(',') + 1
       );
 
-      if (!button) return;
+      const bytes = Uint8Array.from(
+        atob(base64),
+        (character) => character.charCodeAt(0)
+      );
 
-      try {
-        const attachment = state.requests.find(
-          (request) => request.id === button.dataset.id
-        )?.attachment;
+      const extension = {
+        'application/pdf': 'pdf',
+        'image/png': 'png',
+        'image/jpeg': 'jpg'
+      }[attachment.type];
 
-        R.validateAttachment(attachment);
-
-        if (!attachment) return;
-
-        const base64 = attachment.data.slice(
-          attachment.data.indexOf(',') + 1
-        );
-
-        const bytes = Uint8Array.from(
-          atob(base64),
-          (character) => character.charCodeAt(0)
-        );
-
-        const extension = {
-          'application/pdf': 'pdf',
-          'image/png': 'png',
-          'image/jpeg': 'jpg'
-        }[attachment.type];
-
-        const safeName = attachment.name
-          .replace(/\.[^.]*$/, '')
-          .replace(/[^a-zA-Z0-9_-]/g, '_')
-          .slice(0, 80) ||
-          'demo-attachment';
-
-        download(
-          new Blob(
-            [bytes],
-            {
-              type: attachment.type
-            }
-          ),
-          `${safeName}.${extension}`
-        );
-      } catch (caught) {
-        error(
-          detailsDialog,
-          caught.message
-        );
-      }
-    }
-  );
-
-  $('#leave-export').addEventListener(
-    'click',
-    () => {
-      const rows = filteredRequests();
-
-      const cells = (value) => {
-        let text = String(value ?? '');
-
-        if (
-          /^[\s\u0000-\u001f]*[=+@-]/.test(text)
-        ) {
-          text = "'" + text;
-        }
-
-        return (
-          '"' +
-          text.replace(/"/g, '""') +
-          '"'
-        );
-      };
-
-      const data = [
-        [
-          'Employee',
-          'Employee ID',
-          'Department',
-          'Leave type',
-          'Start',
-          'End',
-          'Duration',
-          'Working days',
-          'Status',
-          'Cancellation requested',
-          'Reason',
-          'Latest decision note'
-        ],
-
-        ...rows.map((request) => [
-          person(request).name,
-          request.employeeId,
-          person(request).department,
-          R.TYPES[request.type],
-          request.start,
-          request.end,
-          periodLabel(request.duration),
-          R.requestDays(request),
-          request.status,
-          request.cancellation ? 'Yes' : 'No',
-          request.reason,
-          request.history.at(-1)?.note || ''
-        ])
-      ];
-
-      const csv = '\uFEFF' +
-        data.map(
-          (row) => row.map(cells).join(',')
-        ).join('\r\n');
+      const safeName = attachment.name
+        .replace(/\.[^.]*$/, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .slice(0, 80) ||
+        'demo-attachment';
 
       download(
-        new Blob(
-          [csv],
-          {
-            type: 'text/csv;charset=utf-8;'
-          }
-        ),
-        `PeopleDesk-leave-${year}-list.csv`
+        new Blob([bytes], { type: attachment.type }),
+        `${safeName}.${extension}`
       );
-
-      feedback(
-        'Filtered applications exported as CSV. Attachments and contact details are not included.'
-      );
+    } catch (caught) {
+      error(detailsDialog, caught.message);
     }
-  );
+  });
+
+  $('#leave-export').addEventListener('click', () => {
+    const rows = filteredRequests();
+
+    const cells = (value) => {
+      let text = String(value ?? '');
+
+      if (/^[\s\u0000-\u001f]*[=+@-]/.test(text)) {
+        text = "'" + text;
+      }
+
+      return '"' + text.replace(/"/g, '""') + '"';
+    };
+
+    const data = [
+      [
+        'Employee',
+        'Employee ID',
+        'Department',
+        'Leave type',
+        'Start',
+        'End',
+        'Duration',
+        'Working days',
+        'Status',
+        'Cancellation requested',
+        'Reason',
+        'Latest decision note'
+      ],
+      ...rows.map((request) => [
+        person(request).name,
+        request.employeeId,
+        person(request).department,
+        R.TYPES[request.type],
+        request.start,
+        request.end,
+        periodLabel(request.duration),
+        R.requestDays(request),
+        request.status,
+        request.cancellation ? 'Yes' : 'No',
+        request.reason,
+        request.history.at(-1)?.note || ''
+      ])
+    ];
+
+    const csv = '\uFEFF' +
+      data.map(
+        (row) => row.map(cells).join(',')
+      ).join('\r\n');
+
+    download(
+      new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+      `PeopleDesk-leave-${year}-list.csv`
+    );
+
+    feedback(
+      'Filtered applications exported as CSV. Attachments and contact details are not included.'
+    );
+  });
 
   $('#leave-notifications-button').addEventListener(
     'click',
@@ -2776,49 +2648,33 @@
     }
   );
 
-  $('#leave-mark-read').addEventListener(
-    'click',
-    () => {
-      try {
-        const next = clone();
+  $('#leave-mark-read').addEventListener('click', () => {
+    try {
+      const next = clone();
 
-        next.notifications.forEach(
-          (notification) => {
-            notification.read = true;
-          }
-        );
+      next.notifications.forEach((notification) => {
+        notification.read = true;
+      });
 
-        save(next);
-        renderInbox();
-      } catch (caught) {
-        error(
-          inboxDialog,
-          caught.message
-        );
-      }
+      save(next);
+      renderInbox();
+    } catch (caught) {
+      error(inboxDialog, caught.message);
     }
-  );
+  });
 
-  $('[data-view="leave"]').addEventListener(
-    'click',
-    () => {
-      readStorage();
-      render();
-    }
-  );
+  $('[data-view="leave"]').addEventListener('click', () => {
+    readStorage();
+    render();
+  });
 
   window.addEventListener('storage', (event) => {
-    if (
-      event.key === KEY ||
-      event.key === null
-    ) {
+    if (event.key === KEY || event.key === null) {
       readStorage();
       render();
       preview();
 
-      feedback(
-        'Local leave data refreshed from another tab.'
-      );
+      feedback('Local leave data refreshed from another tab.');
     }
   });
 
@@ -2841,6 +2697,66 @@
       handleAction
     );
 
+    $('#leave-team-timeline').addEventListener(
+      'click',
+      handleAction
+    );
+
+    $('#leave-calendar-search').addEventListener(
+      'input',
+      (event) => {
+        filter.search = event.target.value;
+        $('#leave-search').value = filter.search;
+        renderApplications();
+      }
+    );
+
+    $('#leave-view-week').addEventListener('click', () => {
+      if (!T) return;
+
+      calendarMode = 'week';
+      year = Number(weekStart.slice(0, 4));
+      calendarMonth = weekStart.slice(0, 7);
+      render();
+    });
+
+    $('#leave-view-month').addEventListener('click', () => {
+      calendarMode = 'month';
+      render();
+    });
+
+    function showWeek(date) {
+      if (!T) return;
+
+      weekStart = T.start(date);
+      calendarMonth = weekStart.slice(0, 7);
+      year = Number(weekStart.slice(0, 4));
+      render();
+    }
+
+    $('#leave-week-start').addEventListener(
+      'change',
+      (event) => {
+        try {
+          showWeek(event.target.value);
+        } catch {
+          event.target.value = weekStart;
+        }
+      }
+    );
+
+    $('#leave-week-prev').addEventListener('click', () => {
+      if (T) showWeek(T.shift(weekStart, -1));
+    });
+
+    $('#leave-week-next').addEventListener('click', () => {
+      if (T) showWeek(T.shift(weekStart, 1));
+    });
+
+    $('#leave-week-today').addEventListener('click', () => {
+      if (T) showWeek(T.start(localToday(), true));
+    });
+
     $('#leave-calendar-employee').addEventListener(
       'change',
       (event) => {
@@ -2859,51 +2775,36 @@
       ['leave-calendar-department', 'department'],
       ['leave-calendar-status', 'status']
     ].forEach(([id, key]) => {
-      $('#' + id).addEventListener(
-        'change',
-        (event) => {
-          filter[key] = event.target.value;
-          render();
-        }
-      );
+      $('#' + id).addEventListener('change', (event) => {
+        filter[key] = event.target.value;
+        render();
+      });
     });
 
-    $('#leave-calendar-reset').addEventListener(
-      'click',
-      () => {
-        $('#leave-reset-filters').click();
-        render();
-      }
-    );
+    $('#leave-calendar-reset').addEventListener('click', () => {
+      $('#leave-reset-filters').click();
+      render();
+    });
 
-    $('#leave-month').addEventListener(
-      'change',
-      (event) => {
-        try {
-          R.parseDate(
-            `${event.target.value}-01`
-          );
+    $('#leave-month').addEventListener('change', (event) => {
+      try {
+        R.parseDate(`${event.target.value}-01`);
+        calendarMonth = event.target.value;
+        year = +calendarMonth.slice(0, 4);
 
-          calendarMonth =
-            event.target.value;
-
-          year = +calendarMonth.slice(0, 4);
-
-          render();
-        } catch {
-          event.target.value = calendarMonth;
+        if (T) {
+          weekStart = T.start(`${calendarMonth}-01`);
         }
+
+        render();
+      } catch {
+        event.target.value = calendarMonth;
       }
-    );
+    });
 
     const shiftMonth = (delta) => {
-      const date = R.parseDate(
-        `${calendarMonth}-01`
-      );
-
-      date.setUTCMonth(
-        date.getUTCMonth() + delta
-      );
+      const date = R.parseDate(`${calendarMonth}-01`);
+      date.setUTCMonth(date.getUTCMonth() + delta);
 
       if (
         date.getUTCFullYear() < 1900 ||
@@ -2912,10 +2813,12 @@
         return;
       }
 
-      calendarMonth =
-        R.isoDate(date).slice(0, 7);
-
+      calendarMonth = R.isoDate(date).slice(0, 7);
       year = date.getUTCFullYear();
+
+      if (T) {
+        weekStart = T.start(`${calendarMonth}-01`);
+      }
 
       render();
     };
@@ -2942,11 +2845,7 @@
       }
 
       if (applyDialog.open) {
-        const select = $(
-          '[name="type"]',
-          applyDialog
-        );
-
+        const select = $('[name="type"]', applyDialog);
         const selected = select.value;
 
         select.innerHTML = typeOptions();
@@ -3069,9 +2968,8 @@
         </div>
 
         <p class="leave-muted">
-          Templates contain only column headers.
-          Add your verified holiday dates before uploading.
-          Pasted text does not need a header.
+          Templates contain only column headers. Add your verified holiday
+          dates before uploading. Pasted text does not need a header.
           Only the selected input source will be imported.
         </p>
 
@@ -3101,7 +2999,6 @@
     function resetPreview() {
       generation += 1;
       draft = null;
-
       submitButton.disabled = true;
       previewButton.disabled = false;
 
@@ -3111,49 +3008,26 @@
       error(dialog, '');
     }
 
-    yearInput.addEventListener(
-      'input',
-      resetPreview
-    );
-
-    fileInput.addEventListener(
-      'change',
-      resetPreview
-    );
-
-    textInput.addEventListener(
-      'input',
-      resetPreview
-    );
+    yearInput.addEventListener('input', resetPreview);
+    fileInput.addEventListener('change', resetPreview);
+    textInput.addEventListener('input', resetPreview);
 
     function updateSource() {
-      const paste =
-        sourceInput.value === 'paste';
+      const paste = sourceInput.value === 'paste';
 
-      $('#holiday-file-section', dialog).hidden =
-        paste;
-
-      $('#holiday-text-section', dialog).hidden =
-        !paste;
+      $('#holiday-file-section', dialog).hidden = paste;
+      $('#holiday-text-section', dialog).hidden = !paste;
 
       fileInput.disabled = paste;
       fileInput.required = !paste;
-
       textInput.disabled = !paste;
       textInput.required = paste;
 
       resetPreview();
     }
 
-    sourceInput.addEventListener(
-      'change',
-      updateSource
-    );
-
-    dialog.addEventListener(
-      'close',
-      resetPreview
-    );
+    sourceInput.addEventListener('change', updateSource);
+    dialog.addEventListener('close', resetPreview);
 
     openButton.addEventListener('click', () => {
       readStorage();
@@ -3163,9 +3037,7 @@
 
       resetPreview();
 
-      yearInput.value =
-        calendarMonth.slice(0, 4);
-
+      yearInput.value = calendarMonth.slice(0, 4);
       fileInput.value = '';
       textInput.value = '';
       sourceInput.value = 'file';
@@ -3180,26 +3052,19 @@
         const url = URL.createObjectURL(
           new Blob(
             ['\uFEFFDate,Holiday\r\n'],
-            {
-              type: 'text/csv;charset=utf-8'
-            }
+            { type: 'text/csv;charset=utf-8' }
           )
         );
 
         const link = document.createElement('a');
-
         link.href = url;
-        link.download =
-          'PeopleDesk-public-holidays-template.csv';
+        link.download = 'PeopleDesk-public-holidays-template.csv';
 
         document.body.append(link);
         link.click();
         link.remove();
 
-        setTimeout(
-          () => URL.revokeObjectURL(url),
-          1000
-        );
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     );
 
@@ -3209,266 +3074,207 @@
         const url = URL.createObjectURL(
           new Blob(
             ['Date | Holiday\r\n'],
-            {
-              type: 'text/plain;charset=utf-8'
-            }
+            { type: 'text/plain;charset=utf-8' }
           )
         );
 
         const link = document.createElement('a');
-
         link.href = url;
-        link.download =
-          'PeopleDesk-public-holidays-template.txt';
+        link.download = 'PeopleDesk-public-holidays-template.txt';
 
         document.body.append(link);
         link.click();
         link.remove();
 
-        setTimeout(
-          () => URL.revokeObjectURL(url),
-          1000
-        );
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     );
 
-    previewButton.addEventListener(
-      'click',
-      async () => {
-        resetPreview();
+    previewButton.addEventListener('click', async () => {
+      resetPreview();
 
-        const ticket = generation;
+      const ticket = generation;
+      previewButton.disabled = true;
 
-        previewButton.disabled = true;
+      try {
+        if (storageError) throw new Error(storageError);
 
-        try {
-          if (storageError) {
-            throw new Error(storageError);
-          }
+        const chosenYear = H.validYear(yearInput.value);
+        const snapshot = storedRaw;
+        const source = sourceInput.value;
 
-          const chosenYear = H.validYear(
-            yearInput.value
-          );
+        let text;
+        let format = 'auto';
 
-          const snapshot = storedRaw;
-          const source = sourceInput.value;
+        if (source === 'paste') {
+          text = textInput.value;
 
-          let text;
-          let format = 'auto';
-
-          if (source === 'paste') {
-            text = textInput.value;
-
-            if (!text.trim()) {
-              throw new Error(
-                'Paste at least one holiday: YYYY-MM-DD | Holiday name.'
-              );
-            }
-          } else {
-            const file = fileInput.files[0];
-
-            if (
-              !file ||
-              !/\.(csv|txt)$/i.test(file.name)
-            ) {
-              throw new Error(
-                'Choose a .csv or UTF-8 .txt file.'
-              );
-            }
-
-            if (file.size > H.MAX_BYTES) {
-              throw new Error(
-                'Choose a file no larger than 512 KB.'
-              );
-            }
-
-            format = /\.csv$/i.test(file.name)
-              ? 'csv'
-              : 'auto';
-
-            text = await file.text();
-          }
-
-          if (
-            ticket !== generation ||
-            !dialog.open
-          ) {
-            return;
-          }
-
-          if (
-            storedRaw !== snapshot ||
-            localStorage.getItem(KEY) !== snapshot
-          ) {
+          if (!text.trim()) {
             throw new Error(
-              'Leave data changed while reading the file. Close and reopen the import, then preview again.'
+              'Paste at least one holiday: YYYY-MM-DD | Holiday name.'
+            );
+          }
+        } else {
+          const file = fileInput.files[0];
+
+          if (!file || !/\.(csv|txt)$/i.test(file.name)) {
+            throw new Error(
+              'Choose a .csv or UTF-8 .txt file.'
             );
           }
 
-          const parsed = H.parseInput(
-            text,
-            chosenYear,
-            format
-          );
-
-          const plan = H.plan(
-            parsed,
-            state.policy.holidays
-          );
-
-          draft = {
-            plan,
-            snapshot,
-            chosenYear,
-            source,
-            pastedText:
-              source === 'paste'
-                ? text
-                : null
-          };
-
-          previewBox.innerHTML = `
-            <p>
-              <strong>
-                ${plan.additions.length} new holiday(s)
-              </strong>
-              for ${esc(chosenYear)}.
-            </p>
-
-            <p>
-              ${plan.duplicates} duplicate row(s) skipped;
-              ${plan.conflicts} conflicting date(s) skipped.
-              Existing holiday names will not change.
-            </p>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Holiday</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  ${
-                    plan.rows.map((row) => `
-                      <tr>
-                        <td>${esc(row.date)}</td>
-                        <td>${esc(row.name)}</td>
-                        <td>
-                          ${
-                            row.status === 'add'
-                              ? 'Add'
-                              : row.status === 'duplicate'
-                                ? 'Skip duplicate'
-                                : 'Skip — keeping: ' +
-                                  esc(row.existingName)
-                          }
-                        </td>
-                      </tr>
-                    `).join('')
-                  }
-                </tbody>
-              </table>
-            </div>
-
-            <p>
-              ${
-                plan.additions.length
-                  ? 'Review the dates, then choose Import new holidays to save.'
-                  : 'Nothing new to import. No saved data will change.'
-              }
-            </p>
-          `;
-
-          submitButton.disabled =
-            plan.additions.length === 0;
-        } catch (cause) {
-          if (
-            ticket !== generation ||
-            !dialog.open
-          ) {
-            return;
+          if (file.size > H.MAX_BYTES) {
+            throw new Error(
+              'Choose a file no larger than 512 KB.'
+            );
           }
 
-          draft = null;
-          submitButton.disabled = true;
+          format = /\.csv$/i.test(file.name) ? 'csv' : 'auto';
+          text = await file.text();
+        }
 
-          error(dialog, cause.message);
-        } finally {
-          if (ticket === generation) {
-            previewButton.disabled = false;
-          }
+        if (ticket !== generation || !dialog.open) return;
+
+        if (
+          storedRaw !== snapshot ||
+          localStorage.getItem(KEY) !== snapshot
+        ) {
+          throw new Error(
+            'Leave data changed while reading the file. Close and reopen the import, then preview again.'
+          );
+        }
+
+        const parsed = H.parseInput(text, chosenYear, format);
+        const plan = H.plan(parsed, state.policy.holidays);
+
+        draft = {
+          plan,
+          snapshot,
+          chosenYear,
+          source,
+          pastedText: source === 'paste' ? text : null
+        };
+
+        previewBox.innerHTML = `
+          <p>
+            <strong>${plan.additions.length} new holiday(s)</strong>
+            for ${esc(chosenYear)}.
+          </p>
+
+          <p>
+            ${plan.duplicates} duplicate row(s) skipped;
+            ${plan.conflicts} conflicting date(s) skipped.
+            Existing holiday names will not change.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Holiday</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${
+                  plan.rows.map((row) => `
+                    <tr>
+                      <td>${esc(row.date)}</td>
+                      <td>${esc(row.name)}</td>
+                      <td>${
+                        row.status === 'add'
+                          ? 'Add'
+                          : row.status === 'duplicate'
+                            ? 'Skip duplicate'
+                            : 'Skip — keeping: ' + esc(row.existingName)
+                      }</td>
+                    </tr>
+                  `).join('')
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <p>${
+            plan.additions.length
+              ? 'Review the dates, then choose Import new holidays to save.'
+              : 'Nothing new to import. No saved data will change.'
+          }</p>
+        `;
+
+        submitButton.disabled = plan.additions.length === 0;
+      } catch (cause) {
+        if (ticket !== generation || !dialog.open) return;
+
+        draft = null;
+        submitButton.disabled = true;
+        error(dialog, cause.message);
+      } finally {
+        if (ticket === generation) {
+          previewButton.disabled = false;
         }
       }
-    );
+    });
 
-    $('form', dialog).addEventListener(
-      'submit',
-      (event) => {
-        event.preventDefault();
+    $('form', dialog).addEventListener('submit', (event) => {
+      event.preventDefault();
 
-        try {
-          if (
-            !draft ||
-            draft.chosenYear !== yearInput.value ||
-            draft.source !== sourceInput.value ||
-            (
-              draft.source === 'paste' &&
-              draft.pastedText !== textInput.value
-            ) ||
-            !draft.plan.additions.length
-          ) {
-            throw new Error(
-              'Preview a valid file or pasted list with new holidays before importing.'
-            );
-          }
-
-          if (storageError) {
-            throw new Error(storageError);
-          }
-
-          if (
-            storedRaw !== draft.snapshot ||
-            localStorage.getItem(KEY) !== draft.snapshot
-          ) {
-            throw new Error(
-              'Leave data changed after the preview. Close and reopen the import, then preview again.'
-            );
-          }
-
-          const next = clone();
-
-          draft.plan.additions.forEach((row) => {
-            next.policy.holidays[row.date] =
-              row.name;
-          });
-
-          const count =
-            draft.plan.additions.length;
-
-          const importedYear =
-            draft.chosenYear;
-
-          save(next);
-
-          year = Number(importedYear);
-          calendarMonth = importedYear + '-01';
-
-          dialog.close();
-          render();
-
-          $('#leave-holiday-import-status').textContent =
-            `${count} public holiday(s) imported for ${importedYear}. ` +
-            'Showing January; navigate months to view the rest. ' +
-            'Existing leave applications are unchanged.';
-        } catch (cause) {
-          error(dialog, cause.message);
+      try {
+        if (
+          !draft ||
+          draft.chosenYear !== yearInput.value ||
+          draft.source !== sourceInput.value ||
+          (
+            draft.source === 'paste' &&
+            draft.pastedText !== textInput.value
+          ) ||
+          !draft.plan.additions.length
+        ) {
+          throw new Error(
+            'Preview a valid file or pasted list with new holidays before importing.'
+          );
         }
+
+        if (storageError) throw new Error(storageError);
+
+        if (
+          storedRaw !== draft.snapshot ||
+          localStorage.getItem(KEY) !== draft.snapshot
+        ) {
+          throw new Error(
+            'Leave data changed after the preview. Close and reopen the import, then preview again.'
+          );
+        }
+
+        const next = clone();
+
+        draft.plan.additions.forEach((row) => {
+          next.policy.holidays[row.date] = row.name;
+        });
+
+        const count = draft.plan.additions.length;
+        const importedYear = draft.chosenYear;
+
+        save(next);
+
+        year = Number(importedYear);
+        calendarMonth = importedYear + '-01';
+
+        if (T) {
+          weekStart = T.start(importedYear + '-01-01');
+        }
+
+        dialog.close();
+        render();
+
+        $('#leave-holiday-import-status').textContent =
+          `${count} public holiday(s) imported for ${importedYear}. Showing January; navigate months to view the rest. Existing leave applications are unchanged.`;
+      } catch (cause) {
+        error(dialog, cause.message);
       }
-    );
+    });
   }
 
   setupHolidayImport();
