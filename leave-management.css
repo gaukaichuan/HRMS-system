@@ -1,27 +1,113 @@
-/* Leave module: scoped to preserve the existing PeopleDesk UI. */
+/* PeopleDesk leave enhancements. Existing app styles are preserved. */
+
+#view-leave,
+.leave-dialog {
+  font-family: 'DM Sans', Arial, sans-serif;
+  color: #26324a;
+}
+
+#view-leave .page-heading h1 {
+  font-family: 'Manrope', 'DM Sans', Arial, sans-serif;
+}
+
+#view-leave .button,
+.leave-dialog .button,
+.leave-row-actions .row-action {
+  font-family: 'DM Sans', Arial, sans-serif;
+}
+
+#view-leave h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+#view-leave h3,
+.leave-dialog h3 {
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+
+/* Heading and prototype notice */
+
+.leave-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.leave-heading-actions #leave-unread {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #ede8ff;
+  color: #6049d5;
+  margin-left: 5px;
+}
 
 .leave-notice {
-  background: #f0edff;
-  border: 1px solid #ddd6ff;
+  background: #f2efff;
+  border: 1px solid #e1d9ff;
   border-radius: 12px;
-  padding: 16px 20px;
-  color: #43368a;
-  margin-bottom: 20px;
-  font-size: 13px;
+  padding: 14px 18px;
+  color: #53458c;
+  font-size: 12px;
   line-height: 1.6;
+  margin: 0 0 22px;
 }
 
 .leave-notice p {
   margin: 4px 0 0;
 }
 
+/* Summary cards */
+
+.leave-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 28px;
+}
+
+.leave-kpi {
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.leave-kpi > span {
+  font-size: 12px;
+  color: #6d7890;
+}
+
+.leave-kpi > strong {
+  font-size: 29px;
+}
+
+.leave-kpi > small {
+  font-size: 11px;
+  color: #748097;
+  line-height: 1.5;
+}
+
+/* Employee and year controls */
+
+.leave-section-heading {
+  margin-bottom: 14px;
+}
+
+.leave-section-heading p {
+  font-size: 12px;
+  color: #768096;
+  margin: 6px 0 0;
+}
+
 .leave-controls {
   padding: 18px 22px;
   display: flex;
-  flex-wrap: wrap;
   align-items: end;
   gap: 16px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
 }
 
 #view-leave label,
@@ -29,210 +115,519 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #4c5570;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+  color: #4d5a73;
 }
 
 #view-leave select,
-#view-leave input[type="number"],
-.leave-dialog select,
+#view-leave input,
 .leave-dialog input,
+.leave-dialog select,
 .leave-dialog textarea {
   font: inherit;
   font-weight: 400;
-  color: #27324a;
+  color: #29364d;
   background: #fff;
-  border: 1px solid #d7deeb;
+  border: 1px solid #dce1ed;
   border-radius: 8px;
-  padding: 10px 12px;
-  min-height: 42px;
-  max-width: 100%;
+  padding: 10px 11px;
+  min-height: 40px;
   box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
 }
 
-#view-leave :is(select, input, button):focus-visible,
-.leave-dialog :is(select, input, textarea, button):focus-visible {
-  outline: 3px solid #b5a7ff;
+#view-leave input[type="checkbox"],
+.leave-dialog input[type="checkbox"] {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #7357ed;
+}
+
+#view-leave :is(input, select, button):focus-visible,
+.leave-dialog :is(input, select, textarea, button):focus-visible {
+  outline: 3px solid #c2b5ff;
   outline-offset: 2px;
 }
 
 #leave-employee {
-  min-width: 260px;
+  min-width: 270px;
 }
 
 #leave-year {
-  width: 110px;
+  width: 125px;
 }
+
+/* Leave balance cards */
 
 .leave-balances {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
 .leave-balance {
   padding: 22px;
-  border-top: 3px solid #7863ed;
+  border-top: 3px solid #7962ed;
 }
 
 .leave-balance.medical {
-  border-top-color: #29987c;
+  border-top-color: #269b80;
 }
 
 .leave-balance.emergency {
-  border-top-color: #d79435;
+  border-top-color: #d39436;
 }
 
 .leave-type {
-  color: #68738a;
   font-size: 13px;
   font-weight: 600;
+  color: #637089;
 }
 
 .leave-available {
   display: block;
-  margin: 14px 0 18px;
-  font-size: 34px;
-  color: #26324a;
+  font-size: 36px;
+  line-height: 1.3;
+  margin: 14px 0 5px;
 }
 
 .leave-available small {
   font-size: 12px;
   font-weight: 400;
-  color: #6b768c;
+  color: #737f95;
+}
+
+.leave-balance-ratio {
+  font-size: 11px;
+  color: #728098;
+  margin: 0 0 13px;
+}
+
+.leave-progress {
+  height: 8px;
+  border-radius: 8px;
+  background: #f0edf9;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.leave-progress .used {
+  background: #795ded;
+}
+
+.leave-progress .reserved {
+  background: #c5b8f8;
+}
+
+.medical .leave-progress {
+  background: #eaf6f1;
+}
+
+.medical .used {
+  background: #269b80;
+}
+
+.medical .reserved {
+  background: #9adac9;
+}
+
+.emergency .leave-progress {
+  background: #fff4e4;
+}
+
+.emergency .used {
+  background: #d39436;
+}
+
+.emergency .reserved {
+  background: #f2cd91;
 }
 
 .leave-balance-details {
   display: grid;
-  gap: 10px;
-  color: #69758b;
-  font-size: 12px;
-}
-
-.leave-balance-details span {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.leave-balance-details b {
-  color: #38435b;
-}
-
-.leave-policy {
-  color: #69758b;
-  font-size: 12px;
-  line-height: 1.7;
-  margin: 15px 0 24px;
-}
-
-.leave-toolbar {
-  flex-wrap: wrap;
-  gap: 18px;
-}
-
-.leave-toolbar h2 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.leave-muted {
-  color: #6c7890;
-  font-size: 12px;
-  line-height: 1.6;
-  margin: 6px 0 12px;
-}
-
-.leave-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 18px;
-}
-
-#view-leave .leave-check {
-  flex-direction: row;
-  align-items: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.leave-check input {
-  accent-color: #7357ef;
+.leave-balance-details span {
+  font-size: 10px;
+  color: #6e7990;
+}
+
+.leave-balance-details b {
+  display: block;
+  font-size: 19px;
+  color: #2d3951;
+  margin-top: 6px;
+}
+
+.leave-carry {
+  font-size: 10px;
+  color: #748096;
+  display: block;
+  border-top: 1px solid #eef0f6;
+  padding-top: 12px;
+  margin-top: 16px;
+}
+
+.leave-policy {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #718098;
+  margin: 14px 0 26px;
+}
+
+/* Applications heading and tabs */
+
+.leave-app-heading {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.leave-muted {
+  font-size: 12px;
+  color: #718098;
+  line-height: 1.7;
+  margin: 6px 0 0;
+}
+
+.leave-view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f5f4fa;
+  border-radius: 9px;
+}
+
+.leave-view-tabs button {
+  font: 600 12px 'DM Sans', Arial, sans-serif;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 16px;
+  color: #6c7891;
+  cursor: pointer;
+}
+
+.leave-view-tabs button[aria-pressed="true"] {
+  background: #fff;
+  color: #6650d3;
+  box-shadow: 0 2px 8px #29364d12;
+}
+
+/* Filters */
+
+.leave-filter-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #fbfbfe;
+  border-top: 1px solid #eef0f7;
+  border-bottom: 1px solid #eef0f7;
+  align-items: end;
+}
+
+.leave-filter-grid input,
+.leave-filter-grid select {
+  width: 100%;
+}
+
+.leave-filter-grid .button {
+  align-self: end;
+  min-height: 40px;
+}
+
+#view-leave .leave-check,
+.leave-dialog .leave-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+}
+
+.leave-filter-error {
+  margin: 12px 20px;
+}
+
+/* Applications table */
+
+.leave-table {
+  min-width: 1060px;
+}
+
+.leave-table th {
+  font-size: 9px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.leave-table td {
+  font-size: 12px;
+  vertical-align: middle;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.leave-table td strong {
+  color: #34425a;
+  font-size: 12px;
 }
 
 .leave-cell-small {
   display: block;
-  color: #7c879b;
-  font-size: 11px;
+  color: #79869d;
+  font-size: 10px;
+  line-height: 1.5;
   margin-top: 6px;
-}
-
-.leave-table {
-  min-width: 850px;
-}
-
-.leave-table td {
-  vertical-align: middle;
 }
 
 .leave-row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  min-width: 170px;
+  max-width: 260px;
+  min-width: 180px;
 }
 
 .leave-status {
-  border-radius: 6px;
-  padding: 5px 9px;
-  font-size: 11px;
-  font-weight: 600;
   display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 8px;
 }
 
 .leave-status.pending {
-  color: #8f5b13;
-  background: #fff2d8;
+  background: #fff2dc;
+  color: #966211;
 }
 
 .leave-status.approved {
-  color: #14775a;
-  background: #e5f6ef;
+  background: #e4f6ed;
+  color: #237d60;
 }
 
 .leave-status.rejected {
-  color: #b03f4f;
   background: #ffedf0;
+  color: #ad4052;
 }
 
 .leave-status.cancelled {
-  color: #66718a;
   background: #edf0f5;
+  color: #65728b;
+}
+
+.leave-cancel-label {
+  color: #8b5c16;
+}
+
+.leave-type-dot {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #7962ed;
+}
+
+.leave-type-dot.medical {
+  background: #269b80;
+}
+
+.leave-type-dot.emergency {
+  background: #d39436;
+}
+
+#view-leave .table-footer {
+  white-space: normal;
+  line-height: 1.7;
+  font-size: 10px;
+}
+
+#leave-calendar[hidden],
+#leave-list[hidden] {
+  display: none !important;
+}
+
+/* Calendar */
+
+.leave-calendar-heading {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.leave-calendar-heading h3 {
+  margin-bottom: 0 !important;
+}
+
+.leave-month-controls {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.leave-month-controls button {
+  min-height: 40px;
+}
+
+.leave-legend {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #77839a;
+  padding: 0 20px 18px;
+}
+
+.leave-legend > span:not(:last-child)::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  border-radius: 3px;
+  background: #7962ed;
+  margin-right: 6px;
+}
+
+.leave-legend > span.medical::before {
+  background: #269b80;
+}
+
+.leave-legend > span.emergency::before {
+  background: #d39436;
+}
+
+.leave-calendar-scroll {
+  overflow-x: auto;
+}
+
+.leave-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 770px;
+  border-top: 1px solid #e8ecf4;
+}
+
+.leave-weekday {
+  background: #fafbfe;
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: #718098;
+  font-weight: 600;
+}
+
+.leave-calendar-day {
+  min-height: 115px;
+  border-top: 1px solid #edf0f6;
+  border-right: 1px solid #edf0f6;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.leave-calendar-day > time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #586781;
+}
+
+.leave-calendar-day.weekend {
+  background: #fafbfe;
+}
+
+.leave-calendar-day.outside {
+  background: #f5f6fa;
+}
+
+.leave-calendar-day.outside > time {
+  color: #a5adbc;
+}
+
+.leave-calendar-day.today {
+  box-shadow: inset 0 0 0 2px #b3a2f3;
+}
+
+.leave-holiday {
+  font-size: 9px;
+  color: #996b27;
+  overflow-wrap: anywhere;
+}
+
+.leave-event {
+  display: block;
+  max-width: 100%;
+  text-align: left;
+  font: 500 10px 'DM Sans', Arial, sans-serif;
+  border: 1px solid #d4c8fc;
+  background: #f0ebff;
+  color: #6045bb;
+  border-radius: 5px;
+  padding: 6px;
+  cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.leave-event.medical {
+  background: #eaf8f2;
+  border-color: #b3e4d4;
+  color: #277b61;
+}
+
+.leave-event.emergency {
+  background: #fff3df;
+  border-color: #f1d1a2;
+  color: #95651e;
+}
+
+.leave-event.pending {
+  border-style: dashed;
+}
+
+/* Feedback and validation */
+
+.leave-feedback {
+  color: #59498d;
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 20px;
+  margin: 15px 0;
 }
 
 .leave-error {
-  color: #a82e42;
+  color: #a93246;
   background: #fff0f2;
-  border-radius: 8px;
   padding: 12px;
-  font-size: 13px;
-  line-height: 1.5;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .leave-error[hidden] {
   display: none;
 }
 
-.leave-feedback {
-  color: #4e428e;
-  font-size: 13px;
-  line-height: 1.6;
-  min-height: 22px;
-}
+/* Dialogs and forms */
 
 .leave-dialog {
-  width: min(560px, calc(100vw - 32px));
+  font-family: 'DM Sans', Arial, sans-serif;
+  width: min(650px, calc(100vw - 32px));
   max-height: 88vh;
   padding: 24px;
   border: 1px solid #e0e4ee;
@@ -265,9 +660,8 @@
 }
 
 .leave-dialog-heading .dialog-close {
-  border: 0;
   background: transparent;
-  padding: 4px 10px;
+  border: 0;
   cursor: pointer;
   font-size: 24px;
 }
@@ -286,14 +680,25 @@
   resize: vertical;
 }
 
+.leave-dialog hr {
+  border: 0;
+  border-top: 1px solid #e8ecf5;
+  width: 100%;
+  margin: 0;
+}
+
 .leave-preview {
   padding: 14px;
+  background: #f6f3ff;
   border: 1px solid #e4dfff;
   border-radius: 9px;
-  background: #f6f3ff;
-  color: #594b91;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.7;
+  color: #594b91;
+}
+
+.leave-preview p {
+  margin: 6px 0;
 }
 
 .leave-dialog-actions {
@@ -307,8 +712,23 @@
 
 .leave-dialog button:disabled,
 #view-leave button:disabled {
-  opacity: .5;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Application details and history */
+
+.leave-details-summary {
+  background: #f8f7fc;
+  border-radius: 9px;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.leave-details-summary p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 8px 0;
 }
 
 .leave-history {
@@ -316,15 +736,15 @@
 }
 
 .leave-history li {
+  font-size: 12px;
+  line-height: 1.7;
   padding: 10px 0;
-  font-size: 13px;
-  line-height: 1.6;
   border-bottom: 1px solid #edf0f5;
 }
 
 .leave-history small {
   display: block;
-  color: #788399;
+  color: #7c879a;
 }
 
 .leave-history p {
@@ -334,32 +754,94 @@
 .leave-prewrap {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* Local demo inbox */
+
+.leave-inbox-item {
+  border: 1px solid #e8ebf4;
+  border-radius: 9px;
+  padding: 12px;
+  margin: 10px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.leave-inbox-item p {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.leave-inbox-item small {
+  color: #7b879b;
+}
+
+.leave-inbox-item.unread {
+  background: #f5f1ff;
+  border-color: #dfd5ff;
 }
 
 body:has(.leave-dialog[open]) {
   overflow: hidden !important;
 }
 
-@media (max-width: 1000px) {
+/* Tablet */
+
+@media (max-width: 1100px) {
+  .leave-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .leave-balances {
     gap: 12px;
   }
 
   .leave-balance {
-    padding: 16px;
+    padding: 17px;
+  }
+
+  .leave-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* Mobile */
+
 @media (max-width: 700px) {
+  .sidebar .brand > span:last-child {
+    display: none;
+  }
+
+  .sidebar .brand {
+    gap: 0;
+  }
+
+  .sidebar .brand-mark {
+    flex-shrink: 0;
+  }
+
   #view-leave .page-heading {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  #view-leave .table-footer {
-    white-space: normal;
-    line-height: 1.6;
+  .leave-heading-actions {
+    flex-wrap: wrap;
+  }
+
+  .leave-kpis {
+    gap: 10px;
+  }
+
+  .leave-kpi {
+    padding: 15px;
+  }
+
+  .leave-kpi > strong {
+    font-size: 25px;
   }
 
   .leave-balances {
@@ -376,13 +858,28 @@ body:has(.leave-dialog[open]) {
 
   #leave-employee,
   #leave-year {
-    width: 100%;
     min-width: 0;
+    width: 100%;
   }
 
-  .leave-filters {
+  .leave-app-heading {
+    gap: 12px;
+  }
+
+  .leave-app-heading > div:first-child {
     width: 100%;
-    justify-content: space-between;
+  }
+
+  .leave-view-tabs button {
+    padding: 9px 12px;
+  }
+
+  .leave-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .leave-search {
+    grid-column: 1 / -1;
   }
 
   .leave-dialog {
@@ -395,5 +892,18 @@ body:has(.leave-dialog[open]) {
 
   .leave-full {
     grid-column: auto;
+  }
+
+  .leave-calendar-heading {
+    padding: 16px;
+  }
+
+  .leave-legend {
+    padding: 0 16px 16px;
+  }
+
+  .leave-app-heading,
+  .leave-filter-grid {
+    padding: 16px;
   }
 }
