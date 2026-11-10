@@ -179,6 +179,7 @@ const EMPLOYMENT_STATUSES = [
 ];
 
 const $ = (selector) => document.querySelector(selector);
+
 const $$ = (selector) => [
   ...document.querySelectorAll(selector)
 ];
@@ -196,6 +197,7 @@ const escapeHtml = (value) => String(value ?? '').replace(
 
 let bulkMode = false;
 let editingEmployeeId = null;
+
 const selectedEmployeeIds = new Set();
 
 function readStoredArray(key) {
@@ -478,6 +480,7 @@ function navigate(viewName) {
     employees: 'Employees',
     attendance: 'Attendance',
     leave: 'Leave management',
+    'leave-calendar': 'Leave calendar',
     clock: 'Clock in / out',
     settings: 'Settings'
   }[viewName];
@@ -1122,6 +1125,7 @@ function buildEmployeeDialog() {
   const dialog = document.createElement('dialog');
 
   dialog.className = 'employee-dialog';
+
   dialog.setAttribute(
     'aria-labelledby',
     'employee-dialog-title'
