@@ -496,13 +496,23 @@
           </p>
         </div>
 
-        <button
-          type="button"
-          class="button button-secondary"
-          id="leave-calendar-open-list"
-        >
-          Open leave list
-        </button>
+        <div class="leave-heading-actions">
+          <button
+            type="button"
+            class="button button-secondary"
+            id="leave-import-holidays"
+          >
+            Import public holidays
+          </button>
+
+          <button
+            type="button"
+            class="button button-secondary"
+            id="leave-calendar-open-list"
+          >
+            Open leave list
+          </button>
+        </div>
       </div>
 
       <p class="leave-muted leave-calendar-sync-note">
@@ -516,6 +526,13 @@
         id="leave-calendar-storage-error"
         role="alert"
         hidden
+      ></p>
+
+      <p
+        class="leave-muted leave-calendar-sync-note"
+        id="leave-holiday-import-status"
+        role="status"
+        aria-live="polite"
       ></p>
 
       <section class="panel leave-calendar-panel">
@@ -1341,6 +1358,10 @@
 
   function renderCalendar() {
     if (!calendarView) return;
+
+    $('#leave-import-holidays').disabled =
+      !!storageError ||
+      !window.PeopleDeskHolidayImport;
 
     $('.leave-legend', calendarView).innerHTML =
       Object.entries(R.TYPES)
@@ -2942,6 +2963,515 @@
       }
     }
   );
+
+  // Import company-wide public holidays without touching request snapshots.
+  function setupHolidayImport() {
+    if (!calendarView) return;
+
+    const H = window.PeopleDeskHolidayImport;
+    const openButton = $('#leave-import-holidays');
+
+    if (!H) {
+      openButton.disabled = true;
+      openButton.title =
+        'holiday-import.js could not load. Check script order.';
+      return;
+    }
+
+    const dialog = makeDialog(
+      'leave-holiday-import-dialog',
+      'Import public holidays',
+      `
+        <p class="leave-muted">
+          Upload a CSV or UTF-8 .txt file, or paste text below.
+          CSV columns: <strong>Date,Holiday</strong>.
+          Plain text: <strong>YYYY-MM-DD | Holiday name</strong>, one per line.
+          You can also paste two tab-separated columns from Excel.
+          Import one year at a time, including 2027 or later years.
+        </p>
+
+        <p class="leave-muted">
+          Company-wide calendar: these dates apply to every employee.
+          Include only holidays approved for your workforce's location.
+          Existing dates are kept, not overwritten. New applications use
+          these holidays; existing application day counts stay unchanged.
+          This is a manual import, not an automatic holiday feed.
+        </p>
+
+        <label>
+          Holiday year
+          <input
+            id="holiday-import-year"
+            type="number"
+            min="1900"
+            max="9999"
+            step="1"
+            required
+          >
+        </label>
+
+        <label>
+          Import from
+          <select id="holiday-import-source">
+            <option value="file">Upload CSV or text file</option>
+            <option value="paste">Paste holiday text</option>
+          </select>
+        </label>
+
+        <div id="holiday-file-section">
+          <label>
+            Holiday file (CSV or UTF-8 TXT, maximum 512 KB)
+            <input
+              id="holiday-import-file"
+              type="file"
+              accept=".csv,.txt,text/csv,text/plain"
+              required
+            >
+          </label>
+        </div>
+
+        <div id="holiday-text-section" hidden>
+          <label>
+            Paste holidays (maximum 512 KB)
+            <textarea
+              id="holiday-import-text"
+              rows="7"
+              disabled
+              placeholder="YYYY-MM-DD | Holiday name"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="leave-heading-actions">
+          <button
+            type="button"
+            class="button button-secondary"
+            id="holiday-download-template"
+          >
+            Download CSV template
+          </button>
+
+          <button
+            type="button"
+            class="button button-secondary"
+            id="holiday-download-text-template"
+          >
+            Download text template
+          </button>
+
+          <button
+            type="button"
+            class="button button-secondary"
+            id="holiday-preview"
+          >
+            Preview import
+          </button>
+        </div>
+
+        <p class="leave-muted">
+          Templates contain only column headers.
+          Add your verified holiday dates before uploading.
+          Pasted text does not need a header.
+          Only the selected input source will be imported.
+        </p>
+
+        <div
+          id="holiday-import-preview"
+          class="leave-preview"
+          role="status"
+          aria-live="polite"
+        >
+          Select a year and file or pasted text, then preview.
+        </div>
+      `,
+      'Import new holidays'
+    );
+
+    const yearInput = $('#holiday-import-year', dialog);
+    const fileInput = $('#holiday-import-file', dialog);
+    const sourceInput = $('#holiday-import-source', dialog);
+    const textInput = $('#holiday-import-text', dialog);
+    const previewBox = $('#holiday-import-preview', dialog);
+    const previewButton = $('#holiday-preview', dialog);
+    const submitButton = $('[type="submit"]', dialog);
+
+    let draft = null;
+    let generation = 0;
+
+    function resetPreview() {
+      generation += 1;
+      draft = null;
+
+      submitButton.disabled = true;
+      previewButton.disabled = false;
+
+      previewBox.textContent =
+        'Select a year and file or pasted text, then preview.';
+
+      error(dialog, '');
+    }
+
+    yearInput.addEventListener(
+      'input',
+      resetPreview
+    );
+
+    fileInput.addEventListener(
+      'change',
+      resetPreview
+    );
+
+    textInput.addEventListener(
+      'input',
+      resetPreview
+    );
+
+    function updateSource() {
+      const paste =
+        sourceInput.value === 'paste';
+
+      $('#holiday-file-section', dialog).hidden =
+        paste;
+
+      $('#holiday-text-section', dialog).hidden =
+        !paste;
+
+      fileInput.disabled = paste;
+      fileInput.required = !paste;
+
+      textInput.disabled = !paste;
+      textInput.required = paste;
+
+      resetPreview();
+    }
+
+    sourceInput.addEventListener(
+      'change',
+      updateSource
+    );
+
+    dialog.addEventListener(
+      'close',
+      resetPreview
+    );
+
+    openButton.addEventListener('click', () => {
+      readStorage();
+      render();
+
+      if (storageError) return;
+
+      resetPreview();
+
+      yearInput.value =
+        calendarMonth.slice(0, 4);
+
+      fileInput.value = '';
+      textInput.value = '';
+      sourceInput.value = 'file';
+
+      updateSource();
+      dialog.showModal();
+    });
+
+    $('#holiday-download-template', dialog).addEventListener(
+      'click',
+      () => {
+        const url = URL.createObjectURL(
+          new Blob(
+            ['\uFEFFDate,Holiday\r\n'],
+            {
+              type: 'text/csv;charset=utf-8'
+            }
+          )
+        );
+
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download =
+          'PeopleDesk-public-holidays-template.csv';
+
+        document.body.append(link);
+        link.click();
+        link.remove();
+
+        setTimeout(
+          () => URL.revokeObjectURL(url),
+          1000
+        );
+      }
+    );
+
+    $('#holiday-download-text-template', dialog).addEventListener(
+      'click',
+      () => {
+        const url = URL.createObjectURL(
+          new Blob(
+            ['Date | Holiday\r\n'],
+            {
+              type: 'text/plain;charset=utf-8'
+            }
+          )
+        );
+
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download =
+          'PeopleDesk-public-holidays-template.txt';
+
+        document.body.append(link);
+        link.click();
+        link.remove();
+
+        setTimeout(
+          () => URL.revokeObjectURL(url),
+          1000
+        );
+      }
+    );
+
+    previewButton.addEventListener(
+      'click',
+      async () => {
+        resetPreview();
+
+        const ticket = generation;
+
+        previewButton.disabled = true;
+
+        try {
+          if (storageError) {
+            throw new Error(storageError);
+          }
+
+          const chosenYear = H.validYear(
+            yearInput.value
+          );
+
+          const snapshot = storedRaw;
+          const source = sourceInput.value;
+
+          let text;
+          let format = 'auto';
+
+          if (source === 'paste') {
+            text = textInput.value;
+
+            if (!text.trim()) {
+              throw new Error(
+                'Paste at least one holiday: YYYY-MM-DD | Holiday name.'
+              );
+            }
+          } else {
+            const file = fileInput.files[0];
+
+            if (
+              !file ||
+              !/\.(csv|txt)$/i.test(file.name)
+            ) {
+              throw new Error(
+                'Choose a .csv or UTF-8 .txt file.'
+              );
+            }
+
+            if (file.size > H.MAX_BYTES) {
+              throw new Error(
+                'Choose a file no larger than 512 KB.'
+              );
+            }
+
+            format = /\.csv$/i.test(file.name)
+              ? 'csv'
+              : 'auto';
+
+            text = await file.text();
+          }
+
+          if (
+            ticket !== generation ||
+            !dialog.open
+          ) {
+            return;
+          }
+
+          if (
+            storedRaw !== snapshot ||
+            localStorage.getItem(KEY) !== snapshot
+          ) {
+            throw new Error(
+              'Leave data changed while reading the file. Close and reopen the import, then preview again.'
+            );
+          }
+
+          const parsed = H.parseInput(
+            text,
+            chosenYear,
+            format
+          );
+
+          const plan = H.plan(
+            parsed,
+            state.policy.holidays
+          );
+
+          draft = {
+            plan,
+            snapshot,
+            chosenYear,
+            source,
+            pastedText:
+              source === 'paste'
+                ? text
+                : null
+          };
+
+          previewBox.innerHTML = `
+            <p>
+              <strong>
+                ${plan.additions.length} new holiday(s)
+              </strong>
+              for ${esc(chosenYear)}.
+            </p>
+
+            <p>
+              ${plan.duplicates} duplicate row(s) skipped;
+              ${plan.conflicts} conflicting date(s) skipped.
+              Existing holiday names will not change.
+            </p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Holiday</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  ${
+                    plan.rows.map((row) => `
+                      <tr>
+                        <td>${esc(row.date)}</td>
+                        <td>${esc(row.name)}</td>
+                        <td>
+                          ${
+                            row.status === 'add'
+                              ? 'Add'
+                              : row.status === 'duplicate'
+                                ? 'Skip duplicate'
+                                : 'Skip — keeping: ' +
+                                  esc(row.existingName)
+                          }
+                        </td>
+                      </tr>
+                    `).join('')
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              ${
+                plan.additions.length
+                  ? 'Review the dates, then choose Import new holidays to save.'
+                  : 'Nothing new to import. No saved data will change.'
+              }
+            </p>
+          `;
+
+          submitButton.disabled =
+            plan.additions.length === 0;
+        } catch (cause) {
+          if (
+            ticket !== generation ||
+            !dialog.open
+          ) {
+            return;
+          }
+
+          draft = null;
+          submitButton.disabled = true;
+
+          error(dialog, cause.message);
+        } finally {
+          if (ticket === generation) {
+            previewButton.disabled = false;
+          }
+        }
+      }
+    );
+
+    $('form', dialog).addEventListener(
+      'submit',
+      (event) => {
+        event.preventDefault();
+
+        try {
+          if (
+            !draft ||
+            draft.chosenYear !== yearInput.value ||
+            draft.source !== sourceInput.value ||
+            (
+              draft.source === 'paste' &&
+              draft.pastedText !== textInput.value
+            ) ||
+            !draft.plan.additions.length
+          ) {
+            throw new Error(
+              'Preview a valid file or pasted list with new holidays before importing.'
+            );
+          }
+
+          if (storageError) {
+            throw new Error(storageError);
+          }
+
+          if (
+            storedRaw !== draft.snapshot ||
+            localStorage.getItem(KEY) !== draft.snapshot
+          ) {
+            throw new Error(
+              'Leave data changed after the preview. Close and reopen the import, then preview again.'
+            );
+          }
+
+          const next = clone();
+
+          draft.plan.additions.forEach((row) => {
+            next.policy.holidays[row.date] =
+              row.name;
+          });
+
+          const count =
+            draft.plan.additions.length;
+
+          const importedYear =
+            draft.chosenYear;
+
+          save(next);
+
+          year = Number(importedYear);
+          calendarMonth = importedYear + '-01';
+
+          dialog.close();
+          render();
+
+          $('#leave-holiday-import-status').textContent =
+            `${count} public holiday(s) imported for ${importedYear}. ` +
+            'Showing January; navigate months to view the rest. ' +
+            'Existing leave applications are unchanged.';
+        } catch (cause) {
+          error(dialog, cause.message);
+        }
+      }
+    );
+  }
+
+  setupHolidayImport();
 
   readStorage();
   render();
