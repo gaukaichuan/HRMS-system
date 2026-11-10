@@ -2,41 +2,37 @@ const sampleEmployees = [
   { name: 'Jordan Lee', initials: 'JL', id: 'EMP-0042', department: 'Engineering', role: 'Software Engineer', email: 'jordan.lee@example.com', phone: '+1 555 010 0042', startDate: '2024-06-12', status: 'Active', checkIn: '08:57 AM', checkOut: '—', method: 'Face (planned)', attendance: 'Present', color: '' },
   { name: 'Maya Patel', initials: 'MP', id: 'EMP-0038', department: 'Finance', role: 'Finance Analyst', email: 'maya.patel@example.com', phone: '+1 555 010 0038', startDate: '2023-10-02', status: 'Active', checkIn: '09:18 AM', checkOut: '—', method: 'Manual', attendance: 'Late', color: 'coral' },
   { name: 'Sam Rivera', initials: 'SR', id: 'EMP-0051', department: 'People & Culture', role: 'People Partner', email: 'sam.rivera@example.com', phone: '+1 555 010 0051', startDate: '2022-03-21', status: 'Active', checkIn: '08:42 AM', checkOut: '—', method: 'Manual', attendance: 'Present', color: 'mint' },
-  { name: 'Avery Kim', initials: 'AK', id: 'EMP-0027', department: 'Design', role: 'Product Designer', email: 'avery.kim@example.com', phone: ' +1 555 010 0027', startDate: '2024-01-15', status: 'Active', checkIn: '09:02 AM', checkOut: '—', method: 'Face (planned)', attendance: 'Present', color: 'blue-tint' },
+  { name: 'Avery Kim', initials: 'AK', id: 'EMP-0027', department: 'Design', role: 'Product Designer', email: 'avery.kim@example.com', phone: '+1 555 010 0027', startDate: '2024-01-15', status: 'Active', checkIn: '09:02 AM', checkOut: '—', method: 'Face (planned)', attendance: 'Present', color: 'blue-tint' },
   { name: 'Noah Williams', initials: 'NW', id: 'EMP-0064', department: 'Operations', role: 'Operations Lead', email: 'noah.williams@example.com', phone: '+1 555 010 0064', startDate: '2021-08-09', status: 'Active', checkIn: '—', checkOut: '—', method: '—', attendance: 'Incomplete', color: 'gold' },
-  { name: 'Taylor Morgan', initials: 'TM', id: 'EMP-0019', department: 'Engineering', role: 'QA Engineer', email: 'taylor.morgan@example.com', phone: ' +1 555 010 0019', startDate: '2023-04-03', status: 'Active', checkIn: '08:49 AM', checkOut: '—', method: 'Manual', attendance: 'Present', color: 'coral' },
+  { name: 'Taylor Morgan', initials: 'TM', id: 'EMP-0019', department: 'Engineering', role: 'QA Engineer', email: 'taylor.morgan@example.com', phone: '+1 555 010 0019', startDate: '2023-04-03', status: 'Active', checkIn: '08:49 AM', checkOut: '—', method: 'Manual', attendance: 'Present', color: 'coral' },
   { name: 'Riley Chen', initials: 'RC', id: 'EMP-0072', department: 'Finance', role: 'Payroll Specialist', email: 'riley.chen@example.com', phone: '+1 555 010 0072', startDate: '2020-11-16', status: 'Inactive', checkIn: '—', checkOut: '—', method: '—', attendance: '—', color: 'mint' }
 ];
 
 const STORAGE_KEY = 'peopledesk-employees-v1';
 const DELETED_KEY = 'peopledesk-deleted-employees-v1';
+const OVERRIDES_KEY = 'peopledesk-employee-overrides-v1';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 let bulkMode = false;
+let editingEmployeeId = null;
 const selectedEmployeeIds = new Set();
 
-function loadDeletedIds() {
+function readStoredArray(key) {
   try {
-    const stored = JSON.parse(localStorage.getItem(DELETED_KEY));
-    return new Set(Array.isArray(stored) ? stored : []);
+    const value = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(value) ? value : [];
   } catch (error) {
-    console.warn('Could not read deleted prototype employee records.', error);
-    return new Set();
+    console.warn(`Could not read prototype storage: ${key}`, error);
+    return [];
   }
 }
-
-const deletedEmployeeIds = loadDeletedIds();
+const deletedEmployeeIds = new Set(readStoredArray(DELETED_KEY));
 function loadEmployees() {
-  let saved = [];
-  try {
-    const value = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(value)) saved = value;
-  } catch (error) {
-    console.warn('Could not read saved prototype employee records.', error);
-  }
-  const custom = saved.filter((employee) => employee && employee.id && !deletedEmployeeIds.has(employee.id));
-  return [...sampleEmployees.filter((employee) => !deletedEmployeeIds.has(employee.id)), ...custom];
+  const overrides = new Map(readStoredArray(OVERRIDES_KEY).filter((item) => item?.id).map((item) => [item.id, item]));
+  const custom = readStoredArray(STORAGE_KEY).filter((employee) => employee?.id && !deletedEmployeeIds.has(employee.id));
+  const samples = sampleEmployees.filter((employee) => !deletedEmployeeIds.has(employee.id)).map((employee) => ({ ...employee, ...overrides.get(employee.id) }));
+  return [...samples, ...custom];
 }
 const employees = loadEmployees();
 
@@ -57,7 +53,7 @@ function renderEmployees(search = $('#employee-search').value) {
   $('#employee-count').textContent = `${visible.length} employees`;
   const table = $('#employee-rows').closest('table');
   table.querySelector('thead tr').innerHTML = `${bulkMode ? '<th><input type="checkbox" id="select-visible-employees" aria-label="Select all visible employees"></th>' : ''}<th>EMPLOYEE</th><th>EMPLOYEE ID</th><th>DEPARTMENT</th><th>JOB TITLE</th><th>STATUS</th><th>ACTIONS</th>`;
-  $('#employee-rows').innerHTML = visible.length ? visible.map((employee) => `<tr>${bulkMode ? `<td><input type="checkbox" class="employee-select" data-employee-id="${escapeHtml(employee.id)}" aria-label="Select ${escapeHtml(employee.name)}" ${selectedEmployeeIds.has(employee.id) ? 'checked' : ''}></td>` : ''}<td>${personCell(employee)}</td><td>${escapeHtml(employee.id)}</td><td>${escapeHtml(employee.department)}</td><td>${escapeHtml(employee.role)}</td><td><span class="employee-status ${employee.status.toLowerCase()}">${escapeHtml(employee.status)}</span></td><td><div class="employee-row-actions"><button class="row-action" data-action="toggle-status" data-employee-id="${escapeHtml(employee.id)}">${employee.status === 'Active' ? 'Deactivate' : 'Activate'}</button><button class="row-action danger" data-action="delete" data-employee-id="${escapeHtml(employee.id)}">Delete</button></div></td></tr>`).join('') : `<tr><td colspan="${bulkMode ? 7 : 6}" class="empty-state">No employees match your search.</td></tr>`;
+  $('#employee-rows').innerHTML = visible.length ? visible.map((employee) => `<tr>${bulkMode ? `<td><input type="checkbox" class="employee-select" data-employee-id="${escapeHtml(employee.id)}" aria-label="Select ${escapeHtml(employee.name)}" ${selectedEmployeeIds.has(employee.id) ? 'checked' : ''}></td>` : ''}<td>${personCell(employee)}</td><td>${escapeHtml(employee.id)}</td><td>${escapeHtml(employee.department)}</td><td>${escapeHtml(employee.role)}</td><td><span class="employee-status ${employee.status.toLowerCase()}">${escapeHtml(employee.status)}</span></td><td><div class="employee-row-actions"><button class="row-action" data-action="edit" data-employee-id="${escapeHtml(employee.id)}">Edit</button><button class="row-action" data-action="toggle-status" data-employee-id="${escapeHtml(employee.id)}">${employee.status === 'Active' ? 'Deactivate' : 'Activate'}</button><button class="row-action danger" data-action="delete" data-employee-id="${escapeHtml(employee.id)}">Delete</button></div></td></tr>`).join('') : `<tr><td colspan="${bulkMode ? 7 : 6}" class="empty-state">No employees match your search.</td></tr>`;
   updateBulkControls(visible);
 }
 
@@ -74,10 +70,12 @@ function navigate(viewName) {
 }
 
 function persistEmployeeState() {
-  const customEmployees = employees.filter((employee) => !sampleEmployees.some((sample) => sample.id === employee.id));
+  const custom = employees.filter((employee) => !sampleEmployees.some((sample) => sample.id === employee.id));
+  const overrides = employees.filter((employee) => sampleEmployees.some((sample) => sample.id === employee.id) && JSON.stringify(employee) !== JSON.stringify(sampleEmployees.find((sample) => sample.id === employee.id)));
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(customEmployees));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
     localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedEmployeeIds]));
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
     return true;
   } catch (error) {
     console.error('Could not save prototype employee changes.', error);
@@ -103,12 +101,7 @@ function setBulkMode(enabled) {
   $('#bulk-actions').hidden = !enabled;
   renderEmployees();
 }
-
-function refreshEmployeeViews() {
-  renderEmployees();
-  renderDashboard();
-  renderAttendance();
-}
+function refreshEmployeeViews() { renderEmployees(); renderDashboard(); renderAttendance(); }
 
 function toggleEmployeeStatus(id) {
   const employee = employees.find((item) => item.id === id);
@@ -130,12 +123,12 @@ function deleteEmployees(ids) {
   if (!window.confirm(`${confirmation} This cannot be undone here.`)) return;
   const originalEmployees = [...employees];
   const originalDeleted = new Set(deletedEmployeeIds);
-  for (const id of ids) {
+  ids.forEach((id) => {
     const index = employees.findIndex((employee) => employee.id === id);
     if (index >= 0) employees.splice(index, 1);
     deletedEmployeeIds.add(id);
     selectedEmployeeIds.delete(id);
-  }
+  });
   if (!persistEmployeeState()) {
     employees.splice(0, employees.length, ...originalEmployees);
     deletedEmployeeIds.clear();
@@ -161,14 +154,14 @@ function setSelectedStatus(status) {
 function installEmployeeStyles() {
   const style = document.createElement('style');
   style.textContent = `
-    #view-employees th { font-size: 11px; padding-top: 13px; padding-bottom: 13px; }
-    #view-employees td { font-size: 13px; padding-top: 15px; padding-bottom: 15px; }
-    #view-employees .person-cell strong { font-size: 13px; }
-    #view-employees .person-cell small { font-size: 11px; }
-    #view-employees .person-avatar { width: 34px; height: 34px; font-size: 10px; }
-    #view-employees .employee-status { font-size: 11px; padding: 5px 8px; }
-    #view-employees .search-box input, #view-employees .record-count { font-size: 12px; }
-    #view-employees input[type=checkbox] { width: 16px; height: 16px; accent-color: #6857e8; cursor: pointer; }
+    #view-employees th { font-size:11px; padding-top:13px; padding-bottom:13px; }
+    #view-employees td { font-size:13px; padding-top:15px; padding-bottom:15px; }
+    #view-employees .person-cell strong { font-size:13px; }
+    #view-employees .person-cell small { font-size:11px; }
+    #view-employees .person-avatar { width:34px; height:34px; font-size:10px; }
+    #view-employees .employee-status { font-size:11px; padding:5px 8px; }
+    #view-employees .search-box input,#view-employees .record-count { font-size:12px; }
+    #view-employees input[type=checkbox] { width:16px; height:16px; accent-color:#6857e8; cursor:pointer; }
     .employee-actions { display:flex; align-items:center; gap:9px; }
     .employee-row-actions { display:flex; gap:7px; align-items:center; }
     .row-action { border:1px solid #e8e9f0; border-radius:6px; background:#fff; color:#5f53cd; padding:6px 8px; font:600 10px 'DM Sans'; cursor:pointer; }
@@ -181,9 +174,9 @@ function installEmployeeStyles() {
     .bulk-actions button { min-height:30px; border:1px solid #e6e3ff; border-radius:6px; background:#fff; padding:0 9px; color:#5d50c9; font:600 10px 'DM Sans'; cursor:pointer; }
     .bulk-actions button:disabled { opacity:.45; cursor:not-allowed; }
     .bulk-actions button.bulk-delete { color:#b74e4e; border-color:#f1dddd; }
-    .employee-dialog { width: min(560px, calc(100vw - 32px)); max-height: min(90vh, 760px); padding: 0; border: 1px solid #eceef3; border-radius: 14px; color: #1f2332; box-shadow: 0 24px 80px #1f233244; }
-    .employee-dialog::backdrop { background: #17192a80; backdrop-filter: blur(2px); }
-    .employee-dialog form { padding: 24px; }
+    .employee-dialog { width:min(560px,calc(100vw - 32px)); max-height:min(90vh,760px); padding:0; border:1px solid #eceef3; border-radius:14px; color:#1f2332; box-shadow:0 24px 80px #1f233244; }
+    .employee-dialog::backdrop { background:#17192a80; backdrop-filter:blur(2px); }
+    .employee-dialog form { padding:24px; }
     .employee-dialog-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
     .employee-dialog-header h2 { font:700 20px Manrope,sans-serif; margin:0; }
     .employee-dialog-header p { color:#85899a; font-size:12px; margin:6px 0 0; }
@@ -192,7 +185,7 @@ function installEmployeeStyles() {
     .employee-form-field { display:flex; flex-direction:column; gap:6px; }
     .employee-form-field.full { grid-column:1/-1; }
     .employee-form-field label { color:#55596a; font-size:12px; font-weight:600; }
-    .employee-form-field input,.employee-form-field select { width:100%; min-height:40px; border:1px solid #e4e6ed; border-radius:7px; background:white; padding:0 10px; color:#343848; font:13px 'DM Sans',sans-serif; }
+    .employee-form-field input,.employee-form-field select { width:100%; min-height:40px; border:1px solid #e4e6ed; border-radius:7px; background:#fff; padding:0 10px; color:#343848; font:13px 'DM Sans',sans-serif; }
     .employee-form-field input:focus,.employee-form-field select:focus { outline:2px solid #c9c3ff; border-color:#8072ec; }
     .employee-form-field .required { color:#d75c5c; }
     .employee-form-help { color:#9295a3; font-size:11px; line-height:1.5; margin:16px 0 0; }
@@ -212,7 +205,7 @@ function buildEmployeeDialog() {
   dialog.setAttribute('aria-labelledby', 'employee-dialog-title');
   dialog.innerHTML = `
     <form id="employee-form">
-      <div class="employee-dialog-header"><div><h2 id="employee-dialog-title">Add employee</h2><p>Create a profile in the employee directory.</p></div><button class="dialog-close" type="button" aria-label="Close dialog">×</button></div>
+      <div class="employee-dialog-header"><div><h2 id="employee-dialog-title">Add employee</h2><p id="employee-dialog-description">Create a profile in the employee directory.</p></div><button class="dialog-close" type="button" aria-label="Close dialog">×</button></div>
       <div class="employee-form-grid">
         <div class="employee-form-field"><label for="employee-first-name">First name <span class="required">*</span></label><input id="employee-first-name" name="firstName" autocomplete="given-name" required maxlength="60"></div>
         <div class="employee-form-field"><label for="employee-last-name">Last name <span class="required">*</span></label><input id="employee-last-name" name="lastName" autocomplete="family-name" required maxlength="60"></div>
@@ -225,7 +218,7 @@ function buildEmployeeDialog() {
       </div>
       <p class="employee-form-help">Prototype storage: this record is saved only in this browser on this device. Do not enter real or sensitive employee information.</p>
       <p class="employee-form-error" id="employee-form-error" role="alert" hidden></p>
-      <div class="employee-dialog-actions"><button class="button button-secondary" type="button" data-cancel>Cancel</button><button class="button button-primary" type="submit">Save employee</button></div>
+      <div class="employee-dialog-actions"><button class="button button-secondary" type="button" data-cancel>Cancel</button><button class="button button-primary" id="employee-save-button" type="submit">Save employee</button></div>
     </form>`;
   document.body.append(dialog);
   return dialog;
@@ -242,49 +235,65 @@ function nextEmployeeId() {
 function setupEmployeeDialog() {
   const dialog = buildEmployeeDialog();
   const form = $('#employee-form');
-  const closeDialog = () => dialog.close();
-  $('#add-employee').addEventListener('click', () => {
+  const setField = (name, value) => { form.elements.namedItem(name).value = value ?? ''; };
+  const openDialog = (employee = null) => {
+    editingEmployeeId = employee?.id ?? null;
     form.reset();
     $('#employee-form-error').hidden = true;
-    $('#employee-start-date').value = new Date().toISOString().slice(0, 10);
+    $('#employee-dialog-title').textContent = employee ? 'Edit employee' : 'Add employee';
+    $('#employee-dialog-description').textContent = employee ? `Update the profile for ${employee.name}.` : 'Create a profile in the employee directory.';
+    $('#employee-save-button').textContent = employee ? 'Save changes' : 'Save employee';
+    setField('firstName', employee?.name.split(' ')[0] ?? '');
+    setField('lastName', employee ? employee.name.split(' ').slice(1).join(' ') : '');
+    setField('email', employee?.email ?? '');
+    setField('department', employee?.department ?? '');
+    setField('role', employee?.role ?? '');
+    setField('phone', employee?.phone ?? '');
+    setField('startDate', employee?.startDate ?? new Date().toISOString().slice(0, 10));
+    setField('status', employee?.status ?? 'Active');
     dialog.showModal();
     $('#employee-first-name').focus();
-  });
-  dialog.querySelector('.dialog-close').addEventListener('click', closeDialog);
-  dialog.querySelector('[data-cancel]').addEventListener('click', closeDialog);
-  dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(); });
+  };
+  $('#add-employee').addEventListener('click', () => openDialog());
+  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+  dialog.querySelector('[data-cancel]').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const values = new FormData(form);
     const firstName = String(values.get('firstName')).trim();
     const lastName = String(values.get('lastName')).trim();
     const email = String(values.get('email')).trim();
+    const target = editingEmployeeId ? employees.find((employee) => employee.id === editingEmployeeId) : null;
     const error = $('#employee-form-error');
-    if (employees.some((employee) => employee.email.toLowerCase() === email.toLowerCase())) {
+    if (employees.some((employee) => employee.id !== editingEmployeeId && employee.email.toLowerCase() === email.toLowerCase())) {
       error.textContent = 'An employee with this email address already exists.';
       error.hidden = false;
       $('#employee-email').focus();
       return;
     }
-    const employee = {
-      name: `${firstName} ${lastName}`, initials: `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase(), id: nextEmployeeId(),
-      department: String(values.get('department')).trim(), role: String(values.get('role')).trim(), email,
+    const updated = {
+      ...(target ?? {}),
+      name: `${firstName} ${lastName}`, initials: `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase(),
+      id: target?.id ?? nextEmployeeId(), department: String(values.get('department')).trim(), role: String(values.get('role')).trim(), email,
       phone: String(values.get('phone')).trim(), startDate: String(values.get('startDate')), status: String(values.get('status')),
-      checkIn: '—', checkOut: '—', method: '—', attendance: '—', color: 'blue-tint'
+      checkIn: target?.checkIn ?? '—', checkOut: target?.checkOut ?? '—', method: target?.method ?? '—', attendance: target?.attendance ?? '—', color: target?.color ?? 'blue-tint'
     };
-    employees.push(employee);
+    const before = target ? { ...target } : null;
+    if (target) Object.assign(target, updated); else employees.push(updated);
     if (!persistEmployeeState()) {
-      employees.pop();
+      if (target) Object.assign(target, before); else employees.pop();
       error.textContent = 'Could not save this record in this browser. Check available storage and try again.';
       error.hidden = false;
       return;
     }
     refreshEmployeeViews();
-    closeDialog();
+    dialog.close();
   });
+  return { openDialog };
 }
 
-function setupEmployeeActions() {
+function setupEmployeeActions(employeeDialog) {
   const heading = $('#view-employees .page-heading');
   const addButton = $('#add-employee');
   const actions = document.createElement('div');
@@ -316,6 +325,8 @@ function setupEmployeeActions() {
   $('#employee-rows').addEventListener('click', (event) => {
     const button = event.target.closest('[data-action]');
     if (!button) return;
+    const employee = employees.find((item) => item.id === button.dataset.employeeId);
+    if (button.dataset.action === 'edit' && employee) employeeDialog.openDialog(employee);
     if (button.dataset.action === 'toggle-status') toggleEmployeeStatus(button.dataset.employeeId);
     if (button.dataset.action === 'delete') deleteEmployees([button.dataset.employeeId]);
   });
@@ -355,8 +366,8 @@ $('#request-correction').addEventListener('click', () => window.alert('Attendanc
 $('#download-report').addEventListener('click', () => window.alert('Report export is planned for the next implementation phase.'));
 
 installEmployeeStyles();
-setupEmployeeActions();
-setupEmployeeDialog();
+const employeeDialog = setupEmployeeDialog();
+setupEmployeeActions(employeeDialog);
 renderDashboard();
 renderEmployees();
 renderAttendance();
