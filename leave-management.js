@@ -1272,7 +1272,7 @@
     if (
       file.size > 262144 ||
       file.name.length > 150 ||
-      !\['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)
+      !['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)
     ) {
       throw new Error(
         'Use a fictional PDF, PNG, or JPEG up to 256 KB, with a filename under 151 characters.'
