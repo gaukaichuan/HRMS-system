@@ -1,0 +1,399 @@
+/* Leave module: scoped to preserve the existing PeopleDesk UI. */
+
+.leave-notice {
+  background: #f0edff;
+  border: 1px solid #ddd6ff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #43368a;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.leave-notice p {
+  margin: 4px 0 0;
+}
+
+.leave-controls {
+  padding: 18px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+#view-leave label,
+.leave-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #4c5570;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#view-leave select,
+#view-leave input[type="number"],
+.leave-dialog select,
+.leave-dialog input,
+.leave-dialog textarea {
+  font: inherit;
+  font-weight: 400;
+  color: #27324a;
+  background: #fff;
+  border: 1px solid #d7deeb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 42px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#view-leave :is(select, input, button):focus-visible,
+.leave-dialog :is(select, input, textarea, button):focus-visible {
+  outline: 3px solid #b5a7ff;
+  outline-offset: 2px;
+}
+
+#leave-employee {
+  min-width: 260px;
+}
+
+#leave-year {
+  width: 110px;
+}
+
+.leave-balances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.leave-balance {
+  padding: 22px;
+  border-top: 3px solid #7863ed;
+}
+
+.leave-balance.medical {
+  border-top-color: #29987c;
+}
+
+.leave-balance.emergency {
+  border-top-color: #d79435;
+}
+
+.leave-type {
+  color: #68738a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.leave-available {
+  display: block;
+  margin: 14px 0 18px;
+  font-size: 34px;
+  color: #26324a;
+}
+
+.leave-available small {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b768c;
+}
+
+.leave-balance-details {
+  display: grid;
+  gap: 10px;
+  color: #69758b;
+  font-size: 12px;
+}
+
+.leave-balance-details span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.leave-balance-details b {
+  color: #38435b;
+}
+
+.leave-policy {
+  color: #69758b;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 15px 0 24px;
+}
+
+.leave-toolbar {
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.leave-toolbar h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.leave-muted {
+  color: #6c7890;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 6px 0 12px;
+}
+
+.leave-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+#view-leave .leave-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.leave-check input {
+  accent-color: #7357ef;
+}
+
+.leave-cell-small {
+  display: block;
+  color: #7c879b;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.leave-table {
+  min-width: 850px;
+}
+
+.leave-table td {
+  vertical-align: middle;
+}
+
+.leave-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.leave-status {
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.leave-status.pending {
+  color: #8f5b13;
+  background: #fff2d8;
+}
+
+.leave-status.approved {
+  color: #14775a;
+  background: #e5f6ef;
+}
+
+.leave-status.rejected {
+  color: #b03f4f;
+  background: #ffedf0;
+}
+
+.leave-status.cancelled {
+  color: #66718a;
+  background: #edf0f5;
+}
+
+.leave-error {
+  color: #a82e42;
+  background: #fff0f2;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.leave-error[hidden] {
+  display: none;
+}
+
+.leave-feedback {
+  color: #4e428e;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 22px;
+}
+
+.leave-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: 88vh;
+  padding: 24px;
+  border: 1px solid #e0e4ee;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px #18234333;
+  color: #29344d;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.leave-dialog::backdrop {
+  background: #1b254166;
+}
+
+.leave-dialog form {
+  display: grid;
+  gap: 16px;
+}
+
+.leave-dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.leave-dialog-heading h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.leave-dialog-heading .dialog-close {
+  border: 0;
+  background: transparent;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.leave-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.leave-full {
+  grid-column: 1 / -1;
+}
+
+.leave-dialog textarea {
+  resize: vertical;
+}
+
+.leave-preview {
+  padding: 14px;
+  border: 1px solid #e4dfff;
+  border-radius: 9px;
+  background: #f6f3ff;
+  color: #594b91;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.leave-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid #e9edf5;
+  padding-top: 18px;
+}
+
+.leave-dialog button:disabled,
+#view-leave button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.leave-history {
+  padding-left: 22px;
+}
+
+.leave-history li {
+  padding: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.leave-history small {
+  display: block;
+  color: #788399;
+}
+
+.leave-history p {
+  margin: 5px 0;
+}
+
+.leave-prewrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+body:has(.leave-dialog[open]) {
+  overflow: hidden !important;
+}
+
+@media (max-width: 1000px) {
+  .leave-balances {
+    gap: 12px;
+  }
+
+  .leave-balance {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  #view-leave .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  #view-leave .table-footer {
+    white-space: normal;
+    line-height: 1.6;
+  }
+
+  .leave-balances {
+    grid-template-columns: 1fr;
+  }
+
+  .leave-controls {
+    align-items: stretch;
+  }
+
+  .leave-controls label {
+    width: 100%;
+  }
+
+  #leave-employee,
+  #leave-year {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .leave-filters {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .leave-dialog {
+    padding: 18px;
+  }
+
+  .leave-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .leave-full {
+    grid-column: auto;
+  }
+}
