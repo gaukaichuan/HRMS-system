@@ -153,7 +153,56 @@ const DELETED_KEY = 'peopledesk-deleted-employees-v1';
 const OVERRIDES_KEY = 'peopledesk-employee-overrides-v1';
 const MASTER_DATA_KEY = 'peopledesk-master-data-v1';
 
+const DEFAULT_LEAVE_TYPES = [
+  {
+    id: 'annual',
+    name: 'Annual leave',
+    defaultDays: 14,
+    tracksBalance: true,
+    active: true
+  },
+  {
+    id: 'medical',
+    name: 'Medical leave',
+    defaultDays: 14,
+    tracksBalance: true,
+    active: true
+  },
+  {
+    id: 'emergency',
+    name: 'Emergency leave',
+    defaultDays: 3,
+    tracksBalance: true,
+    active: true
+  },
+  {
+    id: 'wfh',
+    name: 'WFH (Work from home)',
+    defaultDays: 0,
+    tracksBalance: false,
+    active: true
+  }
+];
+
+function withBuiltInLeaveTypes(values) {
+  const list = Array.isArray(values)
+    ? values.map((item) => ({ ...item }))
+    : [];
+
+  DEFAULT_LEAVE_TYPES.forEach((item) => {
+    if (!list.some((type) => type.id === item.id)) {
+      list.push({ ...item });
+    }
+  });
+
+  return list;
+}
+
 const DEFAULT_MASTER_DATA = {
+  leaveTypes: DEFAULT_LEAVE_TYPES.map(
+    (type) => ({ ...type })
+  ),
+
   departments: [
     'Engineering',
     'Finance',
@@ -161,6 +210,7 @@ const DEFAULT_MASTER_DATA = {
     'Design',
     'Operations'
   ],
+
   employmentTypes: [
     'Permanent',
     'Contract',
@@ -202,13 +252,17 @@ const selectedEmployeeIds = new Set();
 
 function readStoredArray(key) {
   try {
-    const value = JSON.parse(localStorage.getItem(key));
+    const value = JSON.parse(
+      localStorage.getItem(key)
+    );
+
     return Array.isArray(value) ? value : [];
   } catch (error) {
     console.warn(
       `Could not read prototype storage: ${key}`,
       error
     );
+
     return [];
   }
 }
@@ -220,24 +274,36 @@ function readMasterData() {
     );
 
     return {
+      leaveTypes: withBuiltInLeaveTypes(
+        stored?.leaveTypes
+      ),
+
       departments: Array.isArray(stored?.departments)
         ? [
-          ...new Set(
-            stored.departments.filter(
-              (item) => typeof item === 'string' && item.trim()
+            ...new Set(
+              stored.departments.filter(
+                (item) => (
+                  typeof item === 'string' &&
+                  item.trim()
+                )
+              )
             )
-          )
-        ]
+          ]
         : [...DEFAULT_MASTER_DATA.departments],
 
-      employmentTypes: Array.isArray(stored?.employmentTypes)
+      employmentTypes: Array.isArray(
+        stored?.employmentTypes
+      )
         ? [
-          ...new Set(
-            stored.employmentTypes.filter(
-              (item) => typeof item === 'string' && item.trim()
+            ...new Set(
+              stored.employmentTypes.filter(
+                (item) => (
+                  typeof item === 'string' &&
+                  item.trim()
+                )
+              )
             )
-          )
-        ]
+          ]
         : [...DEFAULT_MASTER_DATA.employmentTypes]
     };
   } catch (error) {
@@ -247,6 +313,14 @@ function readMasterData() {
 }
 
 const masterData = readMasterData();
+
+let leaveMasterRaw = null;
+
+try {
+  leaveMasterRaw = localStorage.getItem(MASTER_DATA_KEY);
+} catch {
+  // Storage writes will report failure.
+}
 
 const deletedEmployeeIds = new Set(
   readStoredArray(DELETED_KEY)
@@ -340,7 +414,8 @@ function renderEmployees(
             <input
               type="checkbox"
               id="select-visible-employees"
-              aria-label="Select all visible employees">
+              aria-label="Select all visible employees"
+            >
           </th>
         `
         : ''
@@ -357,78 +432,83 @@ function renderEmployees(
 
   $('#employee-rows').innerHTML = visible.length
     ? visible.map((employee) => `
-      <tr>
-        ${
-          bulkMode
-            ? `
-              <td>
-                <input
-                  type="checkbox"
-                  class="employee-select"
-                  data-employee-id="${escapeHtml(employee.id)}"
-                  aria-label="Select ${escapeHtml(employee.name)}"
-                  ${
-                    selectedEmployeeIds.has(employee.id)
-                      ? 'checked'
-                      : ''
-                  }>
-              </td>
-            `
-            : ''
-        }
+        <tr>
+          ${
+            bulkMode
+              ? `
+                <td>
+                  <input
+                    type="checkbox"
+                    class="employee-select"
+                    data-employee-id="${escapeHtml(employee.id)}"
+                    aria-label="Select ${escapeHtml(employee.name)}"
+                    ${
+                      selectedEmployeeIds.has(employee.id)
+                        ? 'checked'
+                        : ''
+                    }
+                  >
+                </td>
+              `
+              : ''
+          }
 
-        <td>${personCell(employee)}</td>
-        <td>${escapeHtml(employee.id)}</td>
-        <td>${escapeHtml(employee.department)}</td>
-        <td>${escapeHtml(employee.role)}</td>
-        <td>${escapeHtml(employee.employmentType || '—')}</td>
-        <td>${escapeHtml(employee.employmentStatus || '—')}</td>
+          <td>${personCell(employee)}</td>
+          <td>${escapeHtml(employee.id)}</td>
+          <td>${escapeHtml(employee.department)}</td>
+          <td>${escapeHtml(employee.role)}</td>
+          <td>${escapeHtml(employee.employmentType || '—')}</td>
+          <td>${escapeHtml(employee.employmentStatus || '—')}</td>
 
-        <td>
-          <span class="employee-status ${employee.status.toLowerCase()}">
-            ${escapeHtml(employee.status)}
-          </span>
-        </td>
+          <td>
+            <span class="employee-status ${employee.status.toLowerCase()}">
+              ${escapeHtml(employee.status)}
+            </span>
+          </td>
 
-        <td>
-          <div class="employee-row-actions">
-            <button
-              class="row-action"
-              data-action="edit"
-              data-employee-id="${escapeHtml(employee.id)}">
-              Edit
-            </button>
+          <td>
+            <div class="employee-row-actions">
+              <button
+                class="row-action"
+                data-action="edit"
+                data-employee-id="${escapeHtml(employee.id)}"
+              >
+                Edit
+              </button>
 
-            <button
-              class="row-action"
-              data-action="toggle-status"
-              data-employee-id="${escapeHtml(employee.id)}">
-              ${
-                employee.status === 'Active'
-                  ? 'Deactivate'
-                  : 'Activate'
-              }
-            </button>
+              <button
+                class="row-action"
+                data-action="toggle-status"
+                data-employee-id="${escapeHtml(employee.id)}"
+              >
+                ${
+                  employee.status === 'Active'
+                    ? 'Deactivate'
+                    : 'Activate'
+                }
+              </button>
 
-            <button
-              class="row-action danger"
-              data-action="delete"
-              data-employee-id="${escapeHtml(employee.id)}">
-              Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('')
+              <button
+                class="row-action danger"
+                data-action="delete"
+                data-employee-id="${escapeHtml(employee.id)}"
+              >
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('')
     : `
-      <tr>
-        <td
-          colspan="${bulkMode ? 10 : 9}"
-          class="empty-state">
-          No employees match your search.
-        </td>
-      </tr>
-    `;
+        <tr>
+          <td
+            colspan="${bulkMode ? 10 : 9}"
+            class="empty-state"
+          >
+            No employees match your search.
+          </td>
+        </tr>
+      `;
 
   updateBulkControls(visible);
 }
@@ -528,6 +608,7 @@ function persistEmployeeState() {
       'Could not save prototype employee changes.',
       error
     );
+
     return false;
   }
 }
@@ -538,12 +619,18 @@ function persistMasterData() {
       MASTER_DATA_KEY,
       JSON.stringify(masterData)
     );
+
+    leaveMasterRaw = localStorage.getItem(
+      MASTER_DATA_KEY
+    );
+
     return true;
   } catch (error) {
     console.error(
       'Could not save prototype master data.',
       error
     );
+
     return false;
   }
 }
@@ -617,6 +704,7 @@ function toggleEmployeeStatus(id) {
       'Could not save this change in this browser. ' +
       'Please try again.'
     );
+
     return;
   }
 
@@ -638,9 +726,11 @@ function deleteEmployees(ids) {
     ? `Delete ${names[0]} from this prototype?`
     : `Delete these ${ids.length} employees from this prototype?`;
 
-  if (!window.confirm(
-    `${confirmation} This cannot be undone here.`
-  )) {
+  if (
+    !window.confirm(
+      `${confirmation} This cannot be undone here.`
+    )
+  ) {
     return;
   }
 
@@ -1144,7 +1234,8 @@ function buildEmployeeDialog() {
         <button
           class="dialog-close"
           type="button"
-          aria-label="Close dialog">
+          aria-label="Close dialog"
+        >
           ×
         </button>
       </div>
@@ -1159,7 +1250,8 @@ function buildEmployeeDialog() {
             name="firstName"
             autocomplete="given-name"
             required
-            maxlength="60">
+            maxlength="60"
+          >
         </div>
 
         <div class="employee-form-field">
@@ -1171,7 +1263,8 @@ function buildEmployeeDialog() {
             name="lastName"
             autocomplete="family-name"
             required
-            maxlength="60">
+            maxlength="60"
+          >
         </div>
 
         <div class="employee-form-field full">
@@ -1184,7 +1277,8 @@ function buildEmployeeDialog() {
             type="email"
             autocomplete="email"
             required
-            maxlength="120">
+            maxlength="120"
+          >
         </div>
 
         <div class="employee-form-field">
@@ -1194,8 +1288,8 @@ function buildEmployeeDialog() {
           <select
             id="employee-department"
             name="department"
-            required>
-          </select>
+            required
+          ></select>
         </div>
 
         <div class="employee-form-field">
@@ -1207,7 +1301,8 @@ function buildEmployeeDialog() {
             name="role"
             required
             maxlength="80"
-            placeholder="e.g. Analyst">
+            placeholder="e.g. Analyst"
+          >
         </div>
 
         <div class="employee-form-field">
@@ -1217,8 +1312,8 @@ function buildEmployeeDialog() {
           <select
             id="employee-type"
             name="employmentType"
-            required>
-          </select>
+            required
+          ></select>
         </div>
 
         <div class="employee-form-field">
@@ -1227,8 +1322,8 @@ function buildEmployeeDialog() {
           </label>
           <select
             id="employee-status"
-            name="employmentStatus">
-          </select>
+            name="employmentStatus"
+          ></select>
         </div>
 
         <div class="employee-form-field">
@@ -1240,7 +1335,8 @@ function buildEmployeeDialog() {
             name="phone"
             type="tel"
             autocomplete="tel"
-            maxlength="30">
+            maxlength="30"
+          >
         </div>
 
         <div class="employee-form-field">
@@ -1251,7 +1347,8 @@ function buildEmployeeDialog() {
             id="employee-start-date"
             name="startDate"
             type="date"
-            required>
+            required
+          >
         </div>
 
         <div class="employee-form-field full">
@@ -1260,7 +1357,8 @@ function buildEmployeeDialog() {
           </label>
           <select
             id="employee-record-status"
-            name="status">
+            name="status"
+          >
             <option>Active</option>
             <option>Inactive</option>
           </select>
@@ -1276,7 +1374,8 @@ function buildEmployeeDialog() {
             id="emergency-name"
             name="emergencyContactName"
             autocomplete="off"
-            maxlength="100">
+            maxlength="100"
+          >
         </div>
 
         <div class="employee-form-field">
@@ -1287,7 +1386,8 @@ function buildEmployeeDialog() {
             id="emergency-relationship"
             name="emergencyContactRelationship"
             maxlength="60"
-            placeholder="e.g. Parent">
+            placeholder="e.g. Parent"
+          >
         </div>
 
         <div class="employee-form-field full">
@@ -1297,7 +1397,8 @@ function buildEmployeeDialog() {
             name="emergencyContactPhone"
             type="tel"
             autocomplete="off"
-            maxlength="30">
+            maxlength="30"
+          >
         </div>
       </div>
 
@@ -1311,21 +1412,23 @@ function buildEmployeeDialog() {
         class="employee-form-error"
         id="employee-form-error"
         role="alert"
-        hidden>
-      </p>
+        hidden
+      ></p>
 
       <div class="employee-dialog-actions">
         <button
           class="button button-secondary"
           type="button"
-          data-cancel>
+          data-cancel
+        >
           Cancel
         </button>
 
         <button
           class="button button-primary"
           id="employee-save-button"
-          type="submit">
+          type="submit"
+        >
           Save employee
         </button>
       </div>
@@ -1333,6 +1436,7 @@ function buildEmployeeDialog() {
   `;
 
   document.body.append(dialog);
+
   return dialog;
 }
 
@@ -1490,21 +1594,24 @@ function setupEmployeeDialog() {
 
     const target = editingEmployeeId
       ? employees.find(
-        (employee) => employee.id === editingEmployeeId
-      )
+          (employee) => employee.id === editingEmployeeId
+        )
       : null;
 
     const error = $('#employee-form-error');
 
-    if (employees.some((employee) => (
-      employee.id !== editingEmployeeId &&
-      employee.email.toLowerCase() === email.toLowerCase()
-    ))) {
+    if (
+      employees.some((employee) => (
+        employee.id !== editingEmployeeId &&
+        employee.email.toLowerCase() === email.toLowerCase()
+      ))
+    ) {
       error.textContent =
         'An employee with this email address already exists.';
 
       error.hidden = false;
       $('#employee-email').focus();
+
       return;
     }
 
@@ -1578,6 +1685,7 @@ function setupEmployeeDialog() {
         'Check available storage and try again.';
 
       error.hidden = false;
+
       return;
     }
 
@@ -1627,7 +1735,8 @@ function setupEmployeeActions(employeeDialog) {
     <button
       type="button"
       class="bulk-delete"
-      data-bulk-action="delete">
+      data-bulk-action="delete"
+    >
       Delete selected
     </button>
   `;
@@ -1708,9 +1817,13 @@ function setupEmployeeActions(employeeDialog) {
       });
     } else if (checkbox.matches('.employee-select')) {
       if (checkbox.checked) {
-        selectedEmployeeIds.add(checkbox.dataset.employeeId);
+        selectedEmployeeIds.add(
+          checkbox.dataset.employeeId
+        );
       } else {
-        selectedEmployeeIds.delete(checkbox.dataset.employeeId);
+        selectedEmployeeIds.delete(
+          checkbox.dataset.employeeId
+        );
       }
     }
 
@@ -1720,6 +1833,7 @@ function setupEmployeeActions(employeeDialog) {
 
 function buildSettingsView() {
   const view = document.createElement('section');
+
   view.className = 'view';
   view.id = 'view-settings';
 
@@ -1741,13 +1855,15 @@ function buildSettingsView() {
 
         <form
           class="master-add-form"
-          data-master-form="departments">
+          data-master-form="departments"
+        >
           <input
             name="value"
             maxlength="80"
             required
             placeholder="Add a department"
-            aria-label="New department">
+            aria-label="New department"
+          >
 
           <button class="button button-primary" type="submit">
             Add
@@ -1763,13 +1879,15 @@ function buildSettingsView() {
 
         <form
           class="master-add-form"
-          data-master-form="employmentTypes">
+          data-master-form="employmentTypes"
+        >
           <input
             name="value"
             maxlength="80"
             required
             placeholder="Add an employment type"
-            aria-label="New employment type">
+            aria-label="New employment type"
+          >
 
           <button class="button button-primary" type="submit">
             Add
@@ -1778,10 +1896,67 @@ function buildSettingsView() {
 
         <ul
           class="master-list"
-          id="employment-type-list">
-        </ul>
+          id="employment-type-list"
+        ></ul>
       </section>
     </div>
+
+    <section class="panel master-card eleave-master-card">
+      <h2>eLeave types</h2>
+
+      <p>
+        Categories used by leave applications, balance cards, filters
+        and the calendar. WFH is a work arrangement and does not deduct
+        Annual, Medical or Emergency leave.
+      </p>
+
+      <form class="eleave-add-form" id="eleave-add-form">
+        <label>
+          Type name
+          <input
+            name="name"
+            maxlength="80"
+            required
+            placeholder="e.g. Compassionate leave"
+          >
+        </label>
+
+        <label>
+          Balance mode
+          <select name="mode">
+            <option value="capped">Annual allowance</option>
+            <option value="uncapped">No fixed day limit</option>
+          </select>
+        </label>
+
+        <label>
+          Default days / year
+          <input
+            name="days"
+            type="number"
+            min="0"
+            max="366"
+            step="0.5"
+            value="0"
+            required
+          >
+        </label>
+
+        <button type="submit" class="button button-primary">
+          Add eLeave type
+        </button>
+      </form>
+
+      <div id="eleave-type-list"></div>
+
+      <p class="eleave-master-note">
+        Defaults apply when an employee/year has no individual override.
+        Deactivate categories instead of deleting them so existing
+        records remain readable. Existing pending applications can still
+        be reviewed. Balance mode is fixed after creation. All changes
+        remain local to this browser.
+      </p>
+    </section>
 
     <p class="master-note">
       Master data is stored in this browser only in the
@@ -1793,8 +1968,8 @@ function buildSettingsView() {
     <div
       class="settings-feedback"
       id="settings-feedback"
-      aria-live="polite">
-    </div>
+      aria-live="polite"
+    ></div>
   `;
 
   $('#view-clock').insertAdjacentElement('afterend', view);
@@ -1802,7 +1977,157 @@ function buildSettingsView() {
   return view;
 }
 
+function renderLeaveTypeMasterData() {
+  const container = $('#eleave-type-list');
+
+  if (!container) return;
+
+  container.innerHTML = masterData.leaveTypes.map((type) => `
+    <form
+      class="eleave-type-row"
+      data-eleave-edit="${escapeHtml(type.id)}"
+    >
+      <label>
+        Name
+        <input
+          name="name"
+          value="${escapeHtml(type.name)}"
+          maxlength="80"
+          required
+        >
+      </label>
+
+      <label>
+        Default days / year
+        <input
+          name="days"
+          type="number"
+          min="0"
+          max="366"
+          step="0.5"
+          value="${escapeHtml(type.defaultDays)}"
+          ${type.tracksBalance ? 'required' : 'disabled'}
+        >
+      </label>
+
+      <label class="eleave-active">
+        <input
+          name="active"
+          type="checkbox"
+          ${type.active ? 'checked' : ''}
+        >
+        Active
+      </label>
+
+      <span class="eleave-mode">
+        ${
+          type.tracksBalance
+            ? 'Annual allowance'
+            : 'No fixed day limit · no leave deduction'
+        }
+      </span>
+
+      <button type="submit" class="button button-secondary">
+        Save type
+      </button>
+    </form>
+  `).join('');
+}
+
+function saveLeaveTypeMasterData(nextTypes) {
+  const R = window.LeaveRules;
+
+  if (!R) {
+    throw new Error(
+      'Leave rules could not load. Fix leave-rules.js before editing eLeave types.'
+    );
+  }
+
+  if (
+    localStorage.getItem(MASTER_DATA_KEY) !== leaveMasterRaw
+  ) {
+    throw new Error(
+      'Master data changed in another tab. Reopen Settings and review the latest values.'
+    );
+  }
+
+  const before = masterData.leaveTypes;
+
+  try {
+    R.configureTypes(nextTypes);
+
+    const raw = localStorage.getItem(
+      'peopledesk-leave-v1'
+    );
+
+    const leave = raw === null
+      ? R.emptyState()
+      : R.validateState(JSON.parse(raw));
+
+    const seen = new Set();
+
+    for (const request of leave.requests) {
+      if (
+        !\['Pending', 'Approved'].includes(request.status) ||
+        !R.tracksBalance(request.type)
+      ) {
+        continue;
+      }
+
+      for (
+        const year of Object.keys(
+          R.requestAllocations(request)
+        )
+      ) {
+        const key = JSON.stringify([
+          request.employeeId,
+          year,
+          request.type
+        ]);
+
+        if (seen.has(key)) continue;
+
+        seen.add(key);
+
+        if (
+          R.balance(
+            leave,
+            request.employeeId,
+            year,
+            request.type
+          ).available < 0
+        ) {
+          throw new Error(
+            'This default would be lower than approved plus pending days. Increase the allowance or review individual policy overrides first.'
+          );
+        }
+      }
+    }
+
+    masterData.leaveTypes = nextTypes;
+
+    if (!persistMasterData()) {
+      throw new Error(
+        'Could not save eLeave types in this browser. No type changes were applied.'
+      );
+    }
+  } catch (error) {
+    masterData.leaveTypes = before;
+    R.configureTypes(before);
+
+    throw error;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('peopledesk-eleave-types-changed')
+  );
+
+  renderLeaveTypeMasterData();
+}
+
 function renderMasterData() {
+  renderLeaveTypeMasterData();
+
   const renderList = (key, target, label) => {
     $(target).innerHTML = masterData[key].map((value) => {
       const inUse = employees.some(
@@ -1818,6 +2143,7 @@ function renderMasterData() {
       return `
         <li>
           <span>${escapeHtml(value)}</span>
+
           <button
             type="button"
             data-master-delete="${key}"
@@ -1826,7 +2152,8 @@ function renderMasterData() {
               inUse
                 ? 'disabled title="This option is used by an employee"'
                 : ''
-            }>
+            }
+          >
             Remove
           </button>
         </li>
@@ -1855,6 +2182,7 @@ function setupSettings() {
   const view = buildSettingsView();
 
   const settingsButton = document.createElement('button');
+
   settingsButton.className = 'icon-button settings-button';
   settingsButton.type = 'button';
 
@@ -1876,8 +2204,102 @@ function setupSettings() {
     $('.top-actions').firstChild
   );
 
+  const addTypeForm = $('#eleave-add-form');
+
+  const updateBalanceMode = () => {
+    const uncapped =
+      addTypeForm.elements.mode.value === 'uncapped';
+
+    addTypeForm.elements.days.disabled = uncapped;
+
+    if (uncapped) {
+      addTypeForm.elements.days.value = '0';
+    }
+  };
+
+  addTypeForm.elements.mode.addEventListener(
+    'change',
+    updateBalanceMode
+  );
+
   view.addEventListener('submit', (event) => {
-    const form = event.target.closest('[data-master-form]');
+    const form = event.target;
+
+    if (
+      form.id !== 'eleave-add-form' &&
+      !form.matches('[data-eleave-edit]')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    try {
+      const f = new FormData(form);
+
+      const next = masterData.leaveTypes.map(
+        (type) => ({ ...type })
+      );
+
+      if (form.id === 'eleave-add-form') {
+        const tracksBalance =
+          f.get('mode') === 'capped';
+
+        next.push({
+          id: (
+            'custom-' +
+            crypto.randomUUID()
+              .replace(/-/g, '')
+              .slice(0, 24)
+          ),
+
+          name: String(f.get('name')).trim(),
+
+          defaultDays: tracksBalance
+            ? Number(f.get('days'))
+            : 0,
+
+          tracksBalance,
+          active: true
+        });
+      } else {
+        const type = next.find(
+          (item) => item.id === form.dataset.eleaveEdit
+        );
+
+        if (!type) {
+          throw new Error(
+            'Type no longer exists. Reopen Settings.'
+          );
+        }
+
+        type.name = String(f.get('name')).trim();
+
+        type.defaultDays = type.tracksBalance
+          ? Number(f.get('days'))
+          : 0;
+
+        type.active = f.get('active') === 'on';
+      }
+
+      saveLeaveTypeMasterData(next);
+
+      if (form.id === 'eleave-add-form') {
+        form.reset();
+        updateBalanceMode();
+      }
+
+      $('#settings-feedback').textContent =
+        'eLeave types saved. Application choices, balances, list and calendar are updated.';
+    } catch (error) {
+      $('#settings-feedback').textContent = error.message;
+    }
+  });
+
+  view.addEventListener('submit', (event) => {
+    const form = event.target.closest(
+      '[data-master-form]'
+    );
 
     if (!form) return;
 
@@ -1891,11 +2313,16 @@ function setupSettings() {
 
     const feedback = $('#settings-feedback');
 
-    if (masterData[key].some(
-      (item) => item.toLowerCase() === value.toLowerCase()
-    )) {
+    if (
+      masterData[key].some(
+        (item) => (
+          item.toLowerCase() === value.toLowerCase()
+        )
+      )
+    ) {
       feedback.textContent =
         `“${value}” already exists in this list.`;
+
       return;
     }
 
@@ -1906,11 +2333,13 @@ function setupSettings() {
 
       feedback.textContent =
         'Could not save master data in this browser.';
+
       return;
     }
 
     form.reset();
     feedback.textContent = `${value} added.`;
+
     renderMasterData();
   });
 
@@ -1938,6 +2367,7 @@ function setupSettings() {
       $('#settings-feedback').textContent =
         'This option is assigned to an employee ' +
         'and cannot be removed.';
+
       return;
     }
 
@@ -2013,30 +2443,32 @@ $$('.filter-chip').forEach((chip) => {
 
     $('#attendance-rows').innerHTML = rows.length
       ? rows.map((employee) => `
-        <tr>
-          <td>${personCell(employee)}</td>
-          <td>
-            ${
-              new Date().toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              })
-            }
-          </td>
-          <td>${escapeHtml(employee.checkIn)}</td>
-          <td>${escapeHtml(employee.checkOut)}</td>
-          <td>${escapeHtml(employee.method)}</td>
-          <td>${badge(employee.attendance)}</td>
-        </tr>
-      `).join('')
+          <tr>
+            <td>${personCell(employee)}</td>
+
+            <td>
+              ${
+                new Date().toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })
+              }
+            </td>
+
+            <td>${escapeHtml(employee.checkIn)}</td>
+            <td>${escapeHtml(employee.checkOut)}</td>
+            <td>${escapeHtml(employee.method)}</td>
+            <td>${badge(employee.attendance)}</td>
+          </tr>
+        `).join('')
       : `
-        <tr>
-          <td colspan="6" class="empty-state">
-            No records in this category.
-          </td>
-        </tr>
-      `;
+          <tr>
+            <td colspan="6" class="empty-state">
+              No records in this category.
+            </td>
+          </tr>
+        `;
   });
 });
 
@@ -2082,3 +2514,31 @@ setupSettings();
 renderDashboard();
 renderEmployees();
 renderAttendance();
+
+window.addEventListener('storage', (event) => {
+  if (
+    event.key !== MASTER_DATA_KEY &&
+    event.key !== null
+  ) {
+    return;
+  }
+
+  Object.assign(
+    masterData,
+    readMasterData()
+  );
+
+  try {
+    leaveMasterRaw = localStorage.getItem(
+      MASTER_DATA_KEY
+    );
+  } catch {
+    // Keep edits guarded.
+  }
+
+  renderMasterData();
+
+  window.dispatchEvent(
+    new CustomEvent('peopledesk-eleave-types-changed')
+  );
+});
