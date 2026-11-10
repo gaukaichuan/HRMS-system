@@ -2068,7 +2068,7 @@ function saveLeaveTypeMasterData(nextTypes) {
 
     for (const request of leave.requests) {
       if (
-        !\['Pending', 'Approved'].includes(request.status) ||
+        !['Pending', 'Approved'].includes(request.status) ||
         !R.tracksBalance(request.type)
       ) {
         continue;
