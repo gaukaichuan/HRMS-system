@@ -796,4 +796,1308 @@
       if (filter.to) R.parseDate(filter.to);
 
       if (
-        filter.from
+        filter.from &&
+        filter.to &&
+        filter.to < filter.from
+      ) {
+        message = 'Filter end date must not be earlier than start date.';
+      }
+    } catch (e) {
+      message = e.message;
+    }
+
+    const el = $('#leave-filter-error');
+    el.textContent = message;
+    el.hidden = !message;
+
+    return !!message;
+  }
+
+  function filteredRequests(calendarRange) {
+    if (filterError()) return [];
+
+    return state.requests.filter((r) => {
+      const p = person(r);
+      const query = filter.search.trim().toLowerCase();
+
+      return (
+        (filter.all || r.employeeId === selectedEmployee) &&
+        (
+          !query ||
+          `${p.name} ${r.employeeId}`.toLowerCase().includes(query)
+        ) &&
+        (!filter.type || r.type === filter.type) &&
+        (!filter.department || p.department === filter.department) &&
+        (
+          !filter.status ||
+          (
+            filter.status === 'Cancellation requested'
+              ? !!r.cancellation
+              : r.status === filter.status
+          )
+        ) &&
+        r.start <= (calendarRange?.end || `${year}-12-31`) &&
+        r.end >= (calendarRange?.start || `${year}-01-01`) &&
+        (!filter.from || r.end >= filter.from) &&
+        (!filter.to || r.start <= filter.to)
+      );
+    }).slice().reverse();
+  }
+
+  function renderInbox() {
+    $('#leave-unread').textContent = state.notifications
+      .filter((n) => !n.read).length;
+
+    $('#leave-inbox-content').innerHTML = state.notifications.length
+      ? state.notifications.map((n) => `
+          <article class="leave-inbox-item ${n.read ? '' : 'unread'}">
+            <p>${esc(n.message)}</p>
+            <small>
+              ${esc(atLabel(n.at))} · ${n.read ? 'Read' : 'Unread'}
+            </small>
+          </article>
+        `).join('')
+      : `
+          <p class="leave-muted">
+            No local notifications yet. Submissions and decisions will
+            appear here.
+          </p>
+        `;
+
+    $('#leave-mark-read').disabled =
+      !!storageError ||
+      !state.notifications.some((n) => !n.read);
+  }
+
+  function renderBalances() {
+    $('#leave-balances').innerHTML = storageError
+      ? `
+          <p class="leave-muted">
+            Balances unavailable until stored records can be read safely.
+          </p>
+        `
+      : Object.entries(R.TYPES).map(([type, label]) => {
+          const b = R.balance(state, selectedEmployee, year, type);
+          const denom = b.entitlement || 1;
+
+          const used = Math.min(100, b.used / denom * 100);
+          const pending = Math.min(
+            100 - used,
+            b.pending / denom * 100
+          );
+
+          return `
+            <article class="panel leave-balance ${type}">
+              <span class="leave-type">${label}</span>
+
+              <strong class="leave-available">
+                ${num(b.available)}
+                <small> days available</small>
+              </strong>
+
+              <p class="leave-balance-ratio">
+                ${num(b.available)} / ${num(b.entitlement)} days available
+              </p>
+
+              <div
+                class="leave-progress"
+                role="img"
+                aria-label="${esc(label)}: ${num(b.used)} used, ${num(b.pending)} pending, ${num(b.available)} available"
+              >
+                <span class="used" style="width:${used}%"></span>
+                <span class="reserved" style="width:${pending}%"></span>
+              </div>
+
+              <div class="leave-balance-details">
+                <span>
+                  Entitled
+                  <b>${num(b.entitlement)}</b>
+                </span>
+                <span>
+                  Used / approved
+                  <b>${num(b.used)}</b>
+                </span>
+                <span>
+                  Pending
+                  <b>${num(b.pending)}</b>
+                </span>
+              </div>
+
+              <small class="leave-carry">
+                Base ${num(b.base)}${
+                  type === 'annual'
+                    ? ` + ${num(b.carryForward)} carry-forward credit`
+                    : ''
+                }
+              </small>
+            </article>
+          `;
+        }).join('');
+
+    $('#leave-policy-summary').textContent =
+      'Local demo only; no login, role enforcement, shared storage, or email delivery. Working days: Monday–Friday, excluding configured public holidays. ' +
+      'Half-days: ' +
+      (state.policy.allowHalfDays ? 'enabled' : 'disabled') +
+      '. ' +
+      Object.keys(state.policy.holidays)
+        .filter((d) => d.startsWith(`${year}-`)).length +
+      ` public holiday(s) configured for ${year}. ` +
+      'Existing applications keep their original day calculation. ' +
+      'No accrual or automatic carry-forward.';
+  }
+
+  function renderRows(rows) {
+    $('#leave-rows').innerHTML = rows.length
+      ? rows.map((r) => {
+          const p = person(r);
+          const actions = [];
+
+          if (!storageError) {
+            if (r.cancellation) {
+              actions.push(
+                ['confirmCancel', 'Approve cancellation'],
+                ['rejectCancel', 'Decline cancellation']
+              );
+            } else {
+              if (r.status === 'Pending') {
+                actions.push(
+                  ['approve', 'Approve'],
+                  ['reject', 'Reject']
+                );
+              }
+
+              if (['Pending', 'Approved'].includes(r.status)) {
+                actions.push(['requestCancel', 'Request cancellation']);
+              }
+            }
+          }
+
+          return `
+            <tr>
+              <td>
+                <strong>${esc(p.name)}</strong>
+                <small class="leave-cell-small">
+                  ${esc(r.employeeId)} ·
+                  ${esc(p.department || 'Unassigned')}
+                </small>
+              </td>
+
+              <td>
+                <span class="leave-type-dot ${r.type}"></span>
+                ${esc(R.TYPES[r.type])}
+                ${r.attachment ? `
+                  <small class="leave-cell-small">
+                    Demo attachment
+                  </small>
+                ` : ''}
+              </td>
+
+              <td>
+                ${esc(dateLabel(r.start))}
+                <small class="leave-cell-small">
+                  ${
+                    r.end === r.start
+                      ? esc(periodLabel(r.duration))
+                      : `to ${esc(dateLabel(r.end))}`
+                  }
+                </small>
+              </td>
+
+              <td>${num(R.requestDays(r))}</td>
+
+              <td>${statusBadge(r)}</td>
+
+              <td>
+                <div class="leave-row-actions">
+                  <button
+                    class="row-action"
+                    data-leave-action="details"
+                    data-id="${esc(r.id)}"
+                  >
+                    View details
+                  </button>
+
+                  ${actions.map(([action, label]) => `
+                    <button
+                      class="row-action ${
+                        ['reject', 'rejectCancel'].includes(action)
+                          ? 'danger'
+                          : ''
+                      }"
+                      data-leave-action="${action}"
+                      data-id="${esc(r.id)}"
+                    >
+                      ${label}
+                    </button>
+                  `).join('')}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('')
+      : `
+          <tr>
+            <td class="empty-state" colspan="6">
+              No applications match these filters. Try another year or
+              reset filters.
+            </td>
+          </tr>
+        `;
+  }
+
+  function renderCalendar() {
+    if (!calendarView) return;
+
+    $('#leave-month').value = calendarMonth;
+
+    $('#leave-calendar-storage-error').textContent = storageError;
+    $('#leave-calendar-storage-error').hidden = !storageError;
+
+    $('#leave-calendar-employee').innerHTML =
+      '<option value="">All employees</option>' + employeeOptions();
+
+    $('#leave-calendar-employee').value =
+      filter.all ? '' : selectedEmployee;
+
+    $('#leave-calendar-type').value = filter.type;
+
+    $('#leave-calendar-department').innerHTML =
+      $('#leave-department').innerHTML;
+
+    $('#leave-calendar-department').value = filter.department;
+    $('#leave-calendar-status').value = filter.status;
+
+    const shared = [];
+
+    if (filter.search) {
+      shared.push(`Employee search: ${filter.search}`);
+    }
+
+    if (filter.from) {
+      shared.push(`From: ${dateLabel(filter.from)}`);
+    }
+
+    if (filter.to) {
+      shared.push(`To: ${dateLabel(filter.to)}`);
+    }
+
+    $('#leave-calendar-filter-note').textContent = shared.length
+      ? (
+          'Also using list filters — ' +
+          shared.join(' · ') +
+          '. Reset shared filters to show all.'
+        )
+      : (
+          'Employee, leave type, department and status filters are shared with the list.'
+        );
+
+    const first = R.parseDate(`${calendarMonth}-01`);
+    const offset = (first.getUTCDay() + 6) % 7;
+    const gridStart = first.valueOf() - offset * R.DAY;
+
+    const lower = Math.max(
+      gridStart,
+      R.parseDate('1900-01-01').valueOf()
+    );
+
+    const upper = Math.min(
+      gridStart + 41 * R.DAY,
+      R.parseDate('9999-12-31').valueOf()
+    );
+
+    const rows = storageError
+      ? []
+      : filteredRequests({
+          start: R.isoDate(new Date(lower)),
+          end: R.isoDate(new Date(upper))
+        });
+
+    const active = rows.filter((r) =>
+      ['Pending', 'Approved'].includes(r.status)
+    );
+
+    const count = active.filter((r) =>
+      R.requestUnits(r).some((day) =>
+        day.date.startsWith(calendarMonth) &&
+        (!filter.from || day.date >= filter.from) &&
+        (!filter.to || day.date <= filter.to)
+      )
+    ).length;
+
+    $('#leave-calendar-title').textContent =
+      first.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC'
+      });
+
+    $('#leave-calendar-count').textContent = storageError
+      ? 'Calendar unavailable until saved data can be read safely.'
+      : filterError()
+        ? $('#leave-filter-error').textContent
+        : (
+            `${count} matching pending / approved application(s) this month. ` +
+            'Click an event for details.'
+          );
+
+    $('#leave-month-prev').disabled = calendarMonth === '1900-01';
+    $('#leave-month-next').disabled = calendarMonth === '9999-12';
+
+    const headings = [
+      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+    ].map((day) => `
+      <div class="leave-weekday">${day}</div>
+    `).join('');
+
+    $('#leave-calendar-grid').innerHTML = headings +
+      Array.from({ length: 42 }, (_, i) => {
+        const current = new Date(gridStart + i * R.DAY);
+
+        if (
+          current.getUTCFullYear() < 1900 ||
+          current.getUTCFullYear() > 9999
+        ) {
+          return (
+            '<div class="leave-calendar-day outside" ' +
+            'aria-hidden="true"></div>'
+          );
+        }
+
+        const date = R.isoDate(current);
+        const outside = !date.startsWith(calendarMonth);
+        const holiday = state.policy.holidays[date];
+
+        const events = active.filter((r) =>
+          R.requestUnits(r).some((day) => day.date === date) &&
+          (!filter.from || date >= filter.from) &&
+          (!filter.to || date <= filter.to)
+        );
+
+        return `
+          <div class="leave-calendar-day
+            ${outside ? 'outside' : ''}
+            ${[0, 6].includes(current.getUTCDay()) ? 'weekend' : ''}
+            ${date === localToday() ? 'today' : ''}
+          ">
+            <time datetime="${date}">
+              ${current.getUTCDate()}
+            </time>
+
+            ${holiday ? `
+              <span class="leave-holiday" title="${esc(holiday)}">
+                ★ ${esc(holiday)}
+              </span>
+            ` : ''}
+
+            ${events.map((r) => `
+              <button
+                type="button"
+                class="leave-event ${r.type} ${r.status.toLowerCase()}"
+                data-leave-action="details"
+                data-id="${esc(r.id)}"
+                title="${esc(person(r).name)} · ${esc(R.TYPES[r.type])} · ${r.status}"
+              >
+                ${esc(person(r).name)}${
+                  r.duration !== 'full'
+                    ? ` · ${r.duration.toUpperCase()}`
+                    : ''
+                }${
+                  r.cancellation
+                    ? ' · Cancellation requested'
+                    : ''
+                }
+              </button>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+  }
+
+  function renderApplications() {
+    const rows = filteredRequests();
+
+    $('#leave-count').textContent =
+      `${rows.length} application(s) · ${year} · ` +
+      (filter.all ? 'All employees' : 'Selected employee');
+
+    renderRows(rows);
+
+    $('#leave-export').disabled = !!storageError || !rows.length;
+
+    renderCalendar();
+  }
+
+  function render() {
+    const list = employeeList();
+
+    if (!list.some((e) => e.id === selectedEmployee)) {
+      selectedEmployee =
+        list.find((e) => e.status === 'Active')?.id ||
+        list[0]?.id ||
+        '';
+    }
+
+    $('#leave-employee').innerHTML = employeeOptions();
+    $('#leave-employee').value = selectedEmployee;
+    $('#leave-year').value = year;
+
+    const departments = [
+      ...new Set(list.map((e) => e.department).filter(Boolean))
+    ].sort();
+
+    $('#leave-department').innerHTML =
+      '<option value="">All departments</option>' +
+      departments.map((d) => `<option>${esc(d)}</option>`).join('');
+
+    if (!departments.includes(filter.department)) {
+      filter.department = '';
+    }
+
+    $('#leave-department').value = filter.department;
+    $('#leave-search').value = filter.search;
+    $('#leave-type').value = filter.type;
+    $('#leave-status').value = filter.status;
+    $('#leave-from').value = filter.from;
+    $('#leave-to').value = filter.to;
+    $('#leave-all-employees').checked = filter.all;
+
+    const alert = $('#leave-storage-error');
+
+    alert.textContent = storageError;
+    alert.hidden = !storageError;
+
+    $('#leave-apply').disabled =
+      !!storageError ||
+      !employees.some((e) => e.status === 'Active');
+
+    $('#leave-entitlements').disabled =
+      !!storageError ||
+      !employees.some((e) => e.id === selectedEmployee);
+
+    renderBalances();
+    renderApplications();
+    renderInbox();
+  }
+
+  function preview() {
+    const f = new FormData($('form', applyDialog));
+
+    try {
+      const units = R.dayUnits(
+        String(f.get('start')),
+        String(f.get('end')),
+        String(f.get('duration')),
+        state.policy.holidays
+      );
+
+      const total = units.reduce((sum, d) => sum + d.units, 0);
+
+      $('#leave-preview').textContent =
+        `${num(total)} working day(s) after weekend / public-holiday exclusions. ` +
+        Object.entries(R.splitUnits(units)).map(([y, count]) => {
+          const available = R.balance(
+            state,
+            String(f.get('employeeId')),
+            y,
+            String(f.get('type'))
+          ).available;
+
+          return (
+            `${y}: ${num(count)} requested / ${num(available)} available` +
+            (count > available ? ' — insufficient balance' : '')
+          );
+        }).join(' · ');
+    } catch (e) {
+      $('#leave-preview').textContent = e.message;
+    }
+  }
+
+  $('#leave-apply').addEventListener('click', () => {
+    const form = $('form', applyDialog);
+
+    form.reset();
+
+    $('[name="employeeId"]', form).innerHTML = employeeOptions(true);
+
+    if (
+      employees.some((e) =>
+        e.id === selectedEmployee &&
+        e.status === 'Active'
+      )
+    ) {
+      $('[name="employeeId"]', form).value = selectedEmployee;
+    }
+
+    $('[name="start"]', form).value = localToday();
+    $('[name="end"]', form).value = localToday();
+
+    $('[name="duration"]', form).innerHTML =
+      '<option value="full">Full day(s)</option>' +
+      (
+        state.policy.allowHalfDays
+          ? `
+              <option value="am">Half day · morning</option>
+              <option value="pm">Half day · afternoon</option>
+            `
+          : ''
+      );
+
+    error(applyDialog, '');
+    preview();
+    applyDialog.showModal();
+  });
+
+  $('form', applyDialog).addEventListener('input', preview);
+  $('form', applyDialog).addEventListener('change', preview);
+
+  async function attachmentFrom(file) {
+    if (!file || !file.size) return null;
+
+    if (
+      file.size > 262144 ||
+      file.name.length > 150 ||
+      !\['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)
+    ) {
+      throw new Error(
+        'Use a fictional PDF, PNG, or JPEG up to 256 KB, with a filename under 151 characters.'
+      );
+    }
+
+    const bytes = new Uint8Array(await file.arrayBuffer());
+
+    const valid = file.type === 'application/pdf'
+      ? String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-'
+      : file.type === 'image/png'
+        ? [137, 80, 78, 71, 13, 10, 26, 10].every(
+            (n, i) => bytes[i] === n
+          )
+        : bytes[0] === 255 &&
+          bytes[1] === 216 &&
+          bytes[2] === 255;
+
+    if (!valid) {
+      throw new Error(
+        'Attachment content does not match its PDF / image file type.'
+      );
+    }
+
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(reader.result);
+
+      reader.onerror = () => reject(
+        new Error('Could not read the attachment.')
+      );
+
+      reader.readAsDataURL(file);
+    });
+
+    const result = {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      data
+    };
+
+    R.validateAttachment(result);
+    return result;
+  }
+
+  $('form', applyDialog).addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (submitting) return;
+
+    submitting = true;
+
+    const submit = $('button[type="submit"]', applyDialog);
+    submit.disabled = true;
+
+    try {
+      const f = new FormData(event.currentTarget);
+
+      const draft = {
+        employeeId: String(f.get('employeeId')),
+        type: String(f.get('type')),
+        duration: String(f.get('duration')),
+        start: String(f.get('start')),
+        end: String(f.get('end')),
+        reason: String(f.get('reason')).trim(),
+        contact: String(f.get('contact')).trim()
+      };
+
+      R.validateApplication(state, draft, employees);
+
+      const attachment = await attachmentFrom(f.get('attachment'));
+      const units = R.validateApplication(state, draft, employees);
+
+      const employee = employees.find(
+        (e) => e.id === draft.employeeId
+      );
+
+      const at = new Date().toISOString();
+
+      const request = {
+        ...draft,
+        id: crypto.randomUUID(),
+        employeeName: employee.name,
+        department: employee.department,
+        status: 'Pending',
+        dayUnits: units,
+        attachment,
+        cancellation: null,
+        history: [
+          {
+            status: 'Pending',
+            actor: 'Demo application (unverified)',
+            note: 'Submitted locally; no email sent.',
+            at
+          }
+        ]
+      };
+
+      const next = clone();
+
+      next.requests.push(request);
+
+      addNotice(
+        next,
+        request,
+        `${employee.name}: ${R.TYPES[request.type]} application submitted for review (${num(R.requestDays(request))} days).`
+      );
+
+      save(next);
+
+      selectedEmployee = employee.id;
+      year = +draft.start.slice(0, 4);
+      calendarMonth = draft.start.slice(0, 7);
+
+      applyDialog.close();
+      render();
+
+      feedback(
+        'Application submitted locally. Pending days are reserved. A message was added to the local demo inbox; no email was sent.'
+      );
+    } catch (e) {
+      error(applyDialog, e.message);
+    } finally {
+      submitting = false;
+      submit.disabled = false;
+    }
+  });
+
+  $('#leave-employee').addEventListener('change', (e) => {
+    selectedEmployee = e.target.value;
+    render();
+  });
+
+  $('#leave-year').addEventListener('change', (e) => {
+    const value = +e.target.value;
+
+    if (
+      !e.target.value ||
+      !Number.isInteger(value) ||
+      value < 1900 ||
+      value > 9999
+    ) {
+      e.target.value = year;
+      feedback('Choose a year from 1900 to 9999.');
+      return;
+    }
+
+    year = value;
+    calendarMonth = `${year}-${calendarMonth.slice(5)}`;
+
+    render();
+  });
+
+  [
+    ['leave-search', 'search', 'input'],
+    ['leave-type', 'type', 'change'],
+    ['leave-department', 'department', 'change'],
+    ['leave-status', 'status', 'change'],
+    ['leave-from', 'from', 'change'],
+    ['leave-to', 'to', 'change']
+  ].forEach(([id, key, event]) => {
+    $('#' + id).addEventListener(event, (e) => {
+      filter[key] = e.target.value;
+      renderApplications();
+    });
+  });
+
+  $('#leave-all-employees').addEventListener('change', (e) => {
+    filter.all = e.target.checked;
+    renderApplications();
+  });
+
+  $('#leave-reset-filters').addEventListener('click', () => {
+    filter = {
+      all: true,
+      search: '',
+      type: '',
+      department: '',
+      status: '',
+      from: '',
+      to: ''
+    };
+
+    [
+      'leave-search',
+      'leave-type',
+      'leave-department',
+      'leave-status',
+      'leave-from',
+      'leave-to'
+    ].forEach((id) => {
+      $('#' + id).value = '';
+    });
+
+    $('#leave-all-employees').checked = true;
+
+    renderApplications();
+  });
+
+  $('#leave-entitlements').addEventListener('click', () => {
+    policyEmployee = selectedEmployee;
+    policyYear = year;
+
+    $('#leave-policy-context').textContent =
+      `${employees.find((e) => e.id === policyEmployee).name} · ${policyYear}. ` +
+      'Demo rules only; confirm HR policy before production.';
+
+    $('#leave-holiday-year').textContent = policyYear;
+
+    Object.keys(R.TYPES).forEach((type) => {
+      $(`[name="${type}"]`, policyDialog).value = R.baseEntitlement(
+        state,
+        policyEmployee,
+        policyYear,
+        type
+      );
+    });
+
+    $('[name="carry"]', policyDialog).value =
+      state.carryForward[policyEmployee]?.[policyYear] || 0;
+
+    $('[name="halfDays"]', policyDialog).checked =
+      state.policy.allowHalfDays;
+
+    $('[name="holidays"]', policyDialog).value =
+      Object.entries(state.policy.holidays)
+        .filter(([date]) => date.startsWith(`${policyYear}-`))
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, label]) => `${date} | ${label}`)
+        .join('\n');
+
+    error(policyDialog, '');
+    policyDialog.showModal();
+  });
+
+  $('form', policyDialog).addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    try {
+      const f = new FormData(event.currentTarget);
+
+      const values = Object.fromEntries(
+        Object.keys(R.TYPES).map((type) => [
+          type,
+          Number(f.get(type))
+        ])
+      );
+
+      const carried = Number(f.get('carry'));
+
+      if (!employees.some((e) => e.id === policyEmployee)) {
+        throw new Error('Selected employee no longer exists.');
+      }
+
+      R.validateEntitlements(
+        state,
+        policyEmployee,
+        policyYear,
+        values,
+        carried
+      );
+
+      const holidays = Object.fromEntries(
+        Object.entries(state.policy.holidays)
+          .filter(([date]) => !date.startsWith(`${policyYear}-`))
+      );
+
+      const seen = new Set();
+
+      for (
+        const line of String(f.get('holidays'))
+          .split(/\r?\n/)
+          .filter((line) => line.trim())
+      ) {
+        const match = line.trim().match(
+          /^(\d{4}-\d{2}-\d{2})\s*\|\s*(.+)$/
+        );
+
+        if (!match) {
+          throw new Error(
+            'Holiday format: YYYY-MM-DD | Holiday name, one per line.'
+          );
+        }
+
+        const date = match[1];
+        const label = match[2].trim();
+
+        R.parseDate(date);
+
+        if (
+          !date.startsWith(`${policyYear}-`) ||
+          !label ||
+          label.length > 100 ||
+          seen.has(date)
+        ) {
+          throw new Error(
+            'Holiday dates must be unique, in the selected year, with names of 1–100 characters.'
+          );
+        }
+
+        seen.add(date);
+        holidays[date] = label;
+      }
+
+      const next = clone();
+
+      if (!Object.hasOwn(next.entitlements, policyEmployee)) {
+        next.entitlements[policyEmployee] = {};
+      }
+
+      if (!Object.hasOwn(next.carryForward, policyEmployee)) {
+        next.carryForward[policyEmployee] = {};
+      }
+
+      next.entitlements[policyEmployee][policyYear] = values;
+      next.carryForward[policyEmployee][policyYear] = carried;
+
+      next.policy = {
+        allowHalfDays: f.get('halfDays') === 'on',
+        holidays
+      };
+
+      save(next);
+      policyDialog.close();
+      render();
+
+      feedback(
+        'Policy saved. New applications use the new holiday calendar; existing day counts remain unchanged.'
+      );
+    } catch (e) {
+      error(policyDialog, e.message);
+    }
+  });
+
+  function showDetails(r) {
+    $('#leave-history-content').innerHTML = `
+      <div class="leave-details-summary">
+        <strong>
+          ${esc(r.employeeName)} · ${esc(R.TYPES[r.type])}
+        </strong>
+
+        <p>
+          ${esc(dateLabel(r.start))} to ${esc(dateLabel(r.end))}
+          · ${num(R.requestDays(r))} working day(s)
+        </p>
+
+        ${statusBadge(r)}
+
+        <p>${esc(periodLabel(r.duration))}</p>
+      </div>
+
+      <p class="leave-prewrap"><b>Reason:</b> ${esc(r.reason)}</p>
+      <p><b>Contact:</b> ${esc(r.contact || 'Not supplied')}</p>
+
+      ${r.attachment ? `
+        <p>
+          <b>Fictional local attachment:</b>
+          ${esc(r.attachment.name)}
+          (${num(r.attachment.size / 1024)} KB)
+        </p>
+
+        <button
+          type="button"
+          class="button button-secondary"
+          id="leave-download-attachment"
+          data-id="${esc(r.id)}"
+        >
+          Download demo attachment
+        </button>
+      ` : '<p class="leave-muted">No attachment.</p>'}
+
+      ${r.cancellation ? `
+        <div class="leave-preview">
+          <b>Cancellation awaiting review</b>
+          <p class="leave-prewrap">${esc(r.cancellation.reason)}</p>
+          <small>
+            Balance is not released until cancellation is approved.
+          </small>
+        </div>
+      ` : ''}
+
+      <h3>Working-day snapshot</h3>
+
+      <p class="leave-muted">
+        ${
+          Object.entries(R.requestAllocations(r))
+            .map(([y, count]) => `${y}: ${num(count)} days`)
+            .join(' · ')
+        }.
+        Stored at submission, including the policy exclusions in effect
+        then.
+      </p>
+
+      <h3>Local decision history (unverified)</h3>
+
+      <ol class="leave-history">
+        ${r.history.map((h) => `
+          <li>
+            <strong>${esc(h.status)}</strong> · ${esc(h.actor)}
+            <small>${esc(atLabel(h.at))}</small>
+            <p class="leave-prewrap">${esc(h.note || 'No note')}</p>
+          </li>
+        `).join('')}
+      </ol>
+    `;
+
+    detailsDialog.showModal();
+  }
+
+  const actionLabels = {
+    approve: 'Approve leave',
+    reject: 'Reject leave',
+    requestCancel: 'Request cancellation',
+    confirmCancel: 'Approve cancellation',
+    rejectCancel: 'Decline cancellation'
+  };
+
+  function handleAction(event) {
+    const button = event.target.closest('[data-leave-action]');
+    if (!button) return;
+
+    const r = state.requests.find(
+      (item) => item.id === button.dataset.id
+    );
+
+    if (!r) return;
+
+    if (button.dataset.leaveAction === 'details') {
+      showDetails(r);
+      return;
+    }
+
+    decisionId = r.id;
+    decisionAction = button.dataset.leaveAction;
+
+    $('#leave-decision-dialog-title').textContent =
+      actionLabels[decisionAction];
+
+    $('#leave-decision-summary').textContent =
+      `${r.employeeName} · ${R.TYPES[r.type]} · ` +
+      `${dateLabel(r.start)} to ${dateLabel(r.end)} · ` +
+      `${num(R.requestDays(r))} day(s). ` +
+      (
+        r.cancellation
+          ? `Cancellation reason: ${r.cancellation.reason}. `
+          : ''
+      ) +
+      (
+        decisionAction === 'requestCancel'
+          ? 'This requests review; balance remains committed until approved.'
+          : decisionAction === 'confirmCancel'
+            ? 'Confirm cancellation: this will release the committed days.'
+            : ''
+      );
+
+    $('[name="note"]', decisionDialog).value = '';
+
+    $('[name="note"]', decisionDialog).required =
+      ['reject', 'requestCancel', 'rejectCancel']
+        .includes(decisionAction);
+
+    $('button[type="submit"]', decisionDialog).textContent =
+      actionLabels[decisionAction];
+
+    error(decisionDialog, '');
+    decisionDialog.showModal();
+  }
+
+  $('#leave-rows').addEventListener('click', handleAction);
+
+  $('form', decisionDialog).addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    try {
+      const f = new FormData(event.currentTarget);
+
+      const replacement = R.transition(
+        state,
+        decisionId,
+        decisionAction,
+        String(f.get('actor')),
+        String(f.get('note')),
+        employees
+      );
+
+      const next = clone();
+
+      next.requests = next.requests.map((r) =>
+        r.id === decisionId ? replacement : r
+      );
+
+      const last = replacement.history.at(-1);
+
+      addNotice(
+        next,
+        replacement,
+        `${replacement.employeeName}: ${R.TYPES[replacement.type]} — ` +
+        `${last.status}${last.note ? ': ' + last.note : '.'}`
+      );
+
+      save(next);
+      decisionDialog.close();
+      render();
+
+      feedback(
+        `${last.status}. Balances recalculated; local inbox updated. No email was sent.`
+      );
+    } catch (e) {
+      error(decisionDialog, e.message);
+    }
+  });
+
+  function download(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+
+    document.body.append(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  detailsDialog.addEventListener('click', (event) => {
+    const button = event.target.closest('#leave-download-attachment');
+    if (!button) return;
+
+    try {
+      const attachment = state.requests.find(
+        (r) => r.id === button.dataset.id
+      )?.attachment;
+
+      R.validateAttachment(attachment);
+
+      if (!attachment) return;
+
+      const base64 = attachment.data.slice(
+        attachment.data.indexOf(',') + 1
+      );
+
+      const bytes = Uint8Array.from(
+        atob(base64),
+        (c) => c.charCodeAt(0)
+      );
+
+      const ext = {
+        'application/pdf': 'pdf',
+        'image/png': 'png',
+        'image/jpeg': 'jpg'
+      }[attachment.type];
+
+      const safeName = attachment.name
+        .replace(/\.[^.]*$/, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .slice(0, 80) || 'demo-attachment';
+
+      download(
+        new Blob([bytes], { type: attachment.type }),
+        `${safeName}.${ext}`
+      );
+    } catch (e) {
+      error(detailsDialog, e.message);
+    }
+  });
+
+  $('#leave-export').addEventListener('click', () => {
+    const rows = filteredRequests();
+
+    const cells = (value) => {
+      let text = String(value ?? '');
+
+      if (/^[\s\u0000-\u001f]*[=+@-]/.test(text)) {
+        text = "'" + text;
+      }
+
+      return '"' + text.replace(/"/g, '""') + '"';
+    };
+
+    const data = [
+      [
+        'Employee',
+        'Employee ID',
+        'Department',
+        'Leave type',
+        'Start',
+        'End',
+        'Duration',
+        'Working days',
+        'Status',
+        'Cancellation requested',
+        'Reason',
+        'Latest decision note'
+      ],
+      ...rows.map((r) => [
+        person(r).name,
+        r.employeeId,
+        person(r).department,
+        R.TYPES[r.type],
+        r.start,
+        r.end,
+        periodLabel(r.duration),
+        R.requestDays(r),
+        r.status,
+        r.cancellation ? 'Yes' : 'No',
+        r.reason,
+        r.history.at(-1)?.note || ''
+      ])
+    ];
+
+    const csv = '\uFEFF' +
+      data.map((row) => row.map(cells).join(',')).join('\r\n');
+
+    download(
+      new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+      `PeopleDesk-leave-${year}-list.csv`
+    );
+
+    feedback(
+      'Filtered applications exported as CSV. Attachments and contact details are not included.'
+    );
+  });
+
+  $('#leave-notifications-button').addEventListener('click', () => {
+    renderInbox();
+    inboxDialog.showModal();
+  });
+
+  $('#leave-mark-read').addEventListener('click', () => {
+    try {
+      const next = clone();
+
+      next.notifications.forEach((n) => n.read = true);
+
+      save(next);
+      renderInbox();
+    } catch (e) {
+      error(inboxDialog, e.message);
+    }
+  });
+
+  $('[data-view="leave"]').addEventListener('click', () => {
+    readStorage();
+    render();
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY || e.key === null) {
+      readStorage();
+      render();
+      preview();
+
+      feedback('Local leave data refreshed from another tab.');
+    }
+  });
+
+  if (calendarView) {
+    $('#leave-calendar-open-list').addEventListener(
+      'click',
+      () => $('[data-view="leave"]').click()
+    );
+
+    $('[data-view="leave-calendar"]').addEventListener('click', () => {
+      readStorage();
+      render();
+    });
+
+    $('#leave-calendar-grid').addEventListener('click', handleAction);
+
+    $('#leave-calendar-employee').addEventListener('change', (event) => {
+      filter.all = !event.target.value;
+
+      if (event.target.value) {
+        selectedEmployee = event.target.value;
+      }
+
+      render();
+    });
+
+    [
+      ['leave-calendar-type', 'type'],
+      ['leave-calendar-department', 'department'],
+      ['leave-calendar-status', 'status']
+    ].forEach(([id, key]) => {
+      $('#' + id).addEventListener('change', (event) => {
+        filter[key] = event.target.value;
+        render();
+      });
+    });
+
+    $('#leave-calendar-reset').addEventListener('click', () => {
+      $('#leave-reset-filters').click();
+      render();
+    });
+
+    $('#leave-month').addEventListener('change', (event) => {
+      try {
+        R.parseDate(`${event.target.value}-01`);
+
+        calendarMonth = event.target.value;
+        year = +calendarMonth.slice(0, 4);
+
+        render();
+      } catch {
+        event.target.value = calendarMonth;
+      }
+    });
+
+    const shiftMonth = (delta) => {
+      const d = R.parseDate(`${calendarMonth}-01`);
+
+      d.setUTCMonth(d.getUTCMonth() + delta);
+
+      if (
+        d.getUTCFullYear() < 1900 ||
+        d.getUTCFullYear() > 9999
+      ) {
+        return;
+      }
+
+      calendarMonth = R.isoDate(d).slice(0, 7);
+      year = d.getUTCFullYear();
+
+      render();
+    };
+
+    $('#leave-month-prev').addEventListener(
+      'click',
+      () => shiftMonth(-1)
+    );
+
+    $('#leave-month-next').addEventListener(
+      'click',
+      () => shiftMonth(1)
+    );
+  }
+
+  readStorage();
+  render();
+})();
