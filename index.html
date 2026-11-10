@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="leave-management.css">
 </head>
+
 <body>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
@@ -74,13 +75,16 @@
 
         <div class="top-actions">
           <span class="today-label" id="today-label"></span>
+
           <button class="icon-button" aria-label="Notifications">
             ♧<i></i>
           </button>
+
           <span class="avatar avatar-blue">AC</span>
         </div>
       </header>
 
+      <!-- Dashboard -->
       <section class="view active" id="view-dashboard">
         <div class="page-heading">
           <div>
@@ -96,16 +100,20 @@
           </button>
         </div>
 
-        <div class="stat-grid">
+        <div class="stat-grid" aria-label="Current records summary">
           <article class="stat-card">
             <div class="stat-top">
               <span>Total employees</span>
               <span class="stat-icon purple">♙</span>
             </div>
-            <div class="stat-value">128</div>
-            <div class="stat-foot">
-              <span class="trend">↗ 4.8%</span>
-              vs. last month
+
+            <div
+              class="stat-value"
+              id="dashboard-total-employees"
+            >—</div>
+
+            <div class="stat-foot" id="dashboard-employee-note">
+              Loading saved employee profiles…
             </div>
           </article>
 
@@ -114,13 +122,14 @@
               <span>Present today</span>
               <span class="stat-icon green">✓</span>
             </div>
-            <div class="stat-value">
-              94 <small>/ 115</small>
-            </div>
-            <div class="stat-foot">
-              <span class="status-pill green-pill">
-                82% attendance
-              </span>
+
+            <div
+              class="stat-value"
+              id="dashboard-present-today"
+            >—</div>
+
+            <div class="stat-foot" id="dashboard-present-note">
+              Based on today's saved check-ins
             </div>
           </article>
 
@@ -129,11 +138,14 @@
               <span>Late arrivals</span>
               <span class="stat-icon orange">◷</span>
             </div>
-            <div class="stat-value">08</div>
-            <div class="stat-foot">
-              <span class="status-pill orange-pill">
-                Needs review
-              </span>
+
+            <div
+              class="stat-value"
+              id="dashboard-late-today"
+            >—</div>
+
+            <div class="stat-foot" id="dashboard-late-note">
+              Based on saved attendance status
             </div>
           </article>
 
@@ -142,17 +154,35 @@
               <span>On leave</span>
               <span class="stat-icon blue">☼</span>
             </div>
-            <div class="stat-value">13</div>
-            <div class="stat-foot">Across 5 departments</div>
+
+            <div
+              class="stat-value"
+              id="dashboard-on-leave"
+            >—</div>
+
+            <div class="stat-foot" id="dashboard-leave-note">
+              Approved leave for today · excludes WFH
+            </div>
           </article>
         </div>
+
+        <p
+          id="dashboard-data-status"
+          role="status"
+          style="
+            font-size:12px;
+            line-height:1.7;
+            color:#718098;
+            margin:0 0 18px;
+          "
+        ></p>
 
         <div class="content-grid">
           <section class="panel attendance-panel">
             <div class="panel-heading">
               <div>
                 <h2>Today’s attendance</h2>
-                <p>Live overview of employee check-ins</p>
+                <p>Today's saved attendance · this browser</p>
               </div>
 
               <button class="text-button" data-go="attendance">
@@ -170,12 +200,16 @@
                     <th>STATUS</th>
                   </tr>
                 </thead>
+
                 <tbody id="dashboard-attendance"></tbody>
               </table>
             </div>
 
             <div class="table-footer">
-              <span>Showing 5 of 94 employees</span>
+              <span id="dashboard-attendance-count">
+                Loading saved attendance…
+              </span>
+
               <button class="text-button" data-go="attendance">
                 See attendance report →
               </button>
@@ -230,7 +264,8 @@
             <button
               class="text-button"
               id="clear-audit-log"
-              type="button">
+              type="button"
+            >
               Clear history
             </button>
           </div>
@@ -239,6 +274,7 @@
         </section>
       </section>
 
+      <!-- Employee directory -->
       <section class="view" id="view-employees">
         <div class="page-heading">
           <div>
@@ -258,11 +294,13 @@
           <div class="toolbar">
             <div class="search-box">
               <span>⌕</span>
+
               <input
                 id="employee-search"
                 type="search"
                 placeholder="Search name, role, or department"
-                aria-label="Search employees">
+                aria-label="Search employees"
+              >
             </div>
 
             <span class="record-count" id="employee-count"></span>
@@ -279,12 +317,14 @@
                   <th>STATUS</th>
                 </tr>
               </thead>
+
               <tbody id="employee-rows"></tbody>
             </table>
           </div>
         </section>
       </section>
 
+      <!-- Attendance -->
       <section class="view" id="view-attendance">
         <div class="page-heading">
           <div>
@@ -298,13 +338,15 @@
           <div class="attendance-actions">
             <button
               class="button button-secondary"
-              id="record-clock-out">
+              id="record-clock-out"
+            >
               ＋ Record clock out
             </button>
 
             <button
               class="button button-primary"
-              id="record-clock-in">
+              id="record-clock-in"
+            >
               ＋ Record clock in
             </button>
           </div>
@@ -314,10 +356,12 @@
           <div class="toolbar attendance-toolbar">
             <div class="date-picker">
               <span>▣</span>
+
               <input
                 type="date"
                 id="attendance-date"
-                aria-label="Attendance date">
+                aria-label="Attendance date"
+              >
             </div>
 
             <div class="filter-chips">
@@ -340,6 +384,7 @@
                   <th>STATUS</th>
                 </tr>
               </thead>
+
               <tbody id="attendance-rows"></tbody>
             </table>
           </div>
@@ -356,17 +401,19 @@
         </section>
       </section>
 
+      <!-- Leave list -->
       <section
         class="view"
         id="view-leave"
-        aria-label="Leave management">
-      </section>
+        aria-label="Leave management"
+      ></section>
 
+      <!-- Separate leave calendar -->
       <section
         class="view"
         id="view-leave-calendar"
-        aria-label="Leave calendar">
-      </section>
+        aria-label="Leave calendar"
+      ></section>
 
       <footer class="app-footer">
         <span>PeopleDesk HRMS · Phase 1 prototype</span>
@@ -381,6 +428,7 @@
     <select id="demo-employee">
       <option>Sample employee</option>
     </select>
+
     <button id="demo-clock" type="button"></button>
     <button id="manual-punch" type="button"></button>
     <span id="clock-feedback"></span>
@@ -393,6 +441,7 @@
     // if an earlier deletion hid them in this browser.
     try {
       const deletedKey = 'peopledesk-deleted-employees-v1';
+
       const deleted = JSON.parse(
         localStorage.getItem(deletedKey) || '[]'
       );
@@ -426,5 +475,6 @@
   <script src="employee-dialog-scroll.js"></script>
   <script src="leave-rules.js"></script>
   <script src="leave-management.js"></script>
+  <script src="dashboard-sync.js"></script>
 </body>
 </html>
