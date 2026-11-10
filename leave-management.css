@@ -908,7 +908,7 @@ body:has(.leave-dialog[open]) {
   }
 }
 
-/* Compact balance controls for the list-only leave page. */
+/* Compact balance controls for the list-only leave page */
 
 :is(#view-leave, #view-leave-calendar) .leave-controls {
   background: transparent;
@@ -937,7 +937,7 @@ body:has(.leave-dialog[open]) {
   }
 }
 
-/* Standalone sidebar calendar tab. */
+/* Standalone sidebar calendar tab */
 
 .leave-calendar-sync-note {
   margin: 0 0 20px;
@@ -971,5 +971,172 @@ body:has(.leave-dialog[open]) {
 @media (max-width: 500px) {
   .leave-calendar-filter-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* WFH category: green in balances, list markers, and calendar */
+
+.leave-balance.wfh {
+  border-top-color: #15803d;
+}
+
+.leave-balance.wfh .leave-type {
+  color: #166534;
+}
+
+.leave-type-dot.wfh,
+.leave-legend > span.wfh::before {
+  background: #15803d;
+}
+
+.leave-event.wfh {
+  background: #dcfce7;
+  border-color: #15803d;
+  color: #166534;
+}
+
+.leave-event.wfh:hover,
+.leave-event.wfh:focus-visible {
+  background: #bbf7d0;
+}
+
+.wfh .leave-progress {
+  background: #dcfce7;
+}
+
+.wfh .leave-progress .used {
+  background: #15803d;
+}
+
+.wfh .leave-progress .reserved {
+  background: #86efac;
+}
+
+/*
+  Uniform text size throughout PeopleDesk.
+
+  1.125rem is 18px with the browser's standard 16px default.
+  These rules override the older component sizes above and in styles.css.
+  Keep this section after the component styles.
+*/
+
+:root {
+  --peopledesk-text-size: 1.125rem;
+}
+
+body,
+body *,
+body *::before,
+body *::after {
+  font-size: var(--peopledesk-text-size) !important;
+}
+
+body {
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  line-height: 1.5;
+}
+
+button,
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select {
+  min-height: 44px;
+}
+
+/* Layout adjustments for the larger text */
+
+.sidebar {
+  overflow-y: auto;
+}
+
+.nav-item {
+  white-space: normal;
+}
+
+.topbar {
+  height: auto;
+  min-height: 66px;
+  gap: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.breadcrumbs,
+.page-heading,
+.panel-heading,
+.toolbar,
+.top-actions {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.search-box,
+.date-picker {
+  height: auto;
+  min-height: 44px;
+}
+
+.search-box input,
+.date-picker input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.leave-calendar-grid {
+  min-width: 1260px;
+}
+
+.leave-event {
+  line-height: 1.45;
+}
+
+/*
+  Readable mobile navigation.
+
+  The original icon-only sidebar is too narrow for larger labels,
+  so navigation becomes a full-width section above the content.
+*/
+
+@media (max-width: 700px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    padding: 16px;
+    overflow: visible;
+  }
+
+  .sidebar nav {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+
+  .nav-item {
+    height: auto;
+    min-height: 44px;
+    padding: 10px 12px;
+    justify-content: flex-start;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .sidebar .brand {
+    padding-bottom: 16px;
+  }
+
+  .sidebar-bottom {
+    margin-top: 16px;
+  }
+
+  .page-heading > *,
+  .panel-heading > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 }
