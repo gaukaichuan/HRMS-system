@@ -29,11 +29,40 @@
     const parsed = new Date(`${date}T00:00:00`);
     return Number.isNaN(parsed.valueOf()) ? date : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
-  function displayTime(time) {
-    if (!time) return '—';
-    const [hour, minute] = time.split(':').map(Number);
-    return new Date(2000, 0, 1, hour, minute).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+ function displayTime(time) {
+  // Support both sample times ("08:57 AM")
+  // and manual attendance times ("08:57").
+  if (typeof time !== 'string') return '—';
+
+  const match = time.trim().match(
+    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i
+  );
+
+  if (!match) return '—';
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] || 0);
+  const period = match[4]?.toUpperCase();
+
+  if (minute > 59 || second > 59) return '—';
+
+  if (period) {
+    if (hour < 1 || hour > 12) return '—';
+
+    // 12 AM = midnight; 12 PM = noon.
+    hour = (hour % 12) + (period === 'PM' ? 12 : 0);
+  } else if (hour > 23) {
+    return '—';
   }
+
+  return new Date(2000, 0, 1, hour, minute, second)
+    .toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+}
+
 
   const auditEntries = readList(AUDIT_KEY);
   function logAction(action, detail) {
