@@ -244,7 +244,7 @@
         );
       }
 
-      if (!\['full', 'am', 'pm'].includes(duration)) {
+      if (!['full', 'am', 'pm'].includes(duration)) {
         fail('Choose full day, morning, or afternoon.');
       }
 
@@ -406,7 +406,7 @@
         if (
           request.employeeId !== employeeId ||
           request.type !== type ||
-          !\['Pending', 'Approved'].includes(request.status)
+          !['Pending', 'Approved'].includes(request.status)
         ) {
           return;
         }
@@ -767,7 +767,7 @@
         event = status;
       } else if (action === 'requestCancel') {
         if (
-          !\['Pending', 'Approved'].includes(status) ||
+          !['Pending', 'Approved'].includes(status) ||
           cancellation
         ) {
           fail(
@@ -792,7 +792,7 @@
       ) {
         if (
           !cancellation ||
-          !\['Pending', 'Approved'].includes(status)
+          !['Pending', 'Approved'].includes(status)
         ) {
           fail(
             'No cancellation request is awaiting review.'
@@ -867,7 +867,7 @@
         input.version !== 1 ||
         (
           input.revision != null &&
-          !\[1, 2].includes(input.revision)
+          ![1, 2].includes(input.revision)
         ) ||
         !Array.isArray(input.requests) ||
         !input.entitlements ||
@@ -938,7 +938,7 @@
         request.department ??= '';
 
         if (
-          !\['full', 'am', 'pm'].includes(request.duration) ||
+          !['full', 'am', 'pm'].includes(request.duration) ||
           typeof request.contact !== 'string' ||
           request.contact.length > 100 ||
           typeof request.department !== 'string'
@@ -995,7 +995,7 @@
         if (
           request.cancellation != null &&
           (
-            !\['Pending', 'Approved'].includes(request.status) ||
+            !['Pending', 'Approved'].includes(request.status) ||
             typeof request.cancellation.reason !== 'string' ||
             typeof request.cancellation.actor !== 'string' ||
             Number.isNaN(
