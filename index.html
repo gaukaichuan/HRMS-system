@@ -52,6 +52,18 @@
       <footer class="app-footer"><span>PeopleDesk HRMS · Phase 1 prototype</span><span>Sample data · No biometric processing</span></footer>
     </main>
   </div>
+  <!-- Compatibility hooks for app.js legacy bindings; hrms-enhancements.js removes this placeholder clock view. -->
+  <section id="view-clock" hidden aria-hidden="true"><select id="demo-employee"><option>Sample employee</option></select><button id="demo-clock" type="button"></button><button id="manual-punch" type="button"></button><span id="clock-feedback"></span></section>
+  <button id="download-report" type="button" hidden></button>
+  <script>
+    // Restore the built-in demo employees if an earlier prototype deletion hid them in this browser.
+    try {
+      const deletedKey = 'peopledesk-deleted-employees-v1';
+      const deleted = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+      const sampleIds = new Set(['EMP-0042', 'EMP-0038', 'EMP-0051', 'EMP-0027', 'EMP-0064', 'EMP-0019', 'EMP-0072']);
+      localStorage.setItem(deletedKey, JSON.stringify(deleted.filter((id) => !sampleIds.has(id))));
+    } catch (error) { console.warn('Could not restore sample employee visibility.', error); }
+  </script>
   <script src="app.js"></script>
   <script src="hrms-enhancements.js"></script>
   <script src="employee-dialog-scroll.js"></script>
