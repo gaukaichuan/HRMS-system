@@ -2,125 +2,796 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <meta name="theme-color" content="#f6f7fb">
-  <meta name="description" content="Mobile attendance and leave request preview for PeopleDesk HRMS.">
+
+  <meta
+    name="description"
+    content="Employee sign-in and attendance for PeopleDesk HRMS."
+  >
+
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+  >
+
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="clock-icon.svg" type="image/svg+xml">
+
   <title>PeopleDesk · Employee app</title>
+
   <link rel="stylesheet" href="clock.css">
   <link rel="stylesheet" href="clock-menu.css">
   <link rel="stylesheet" href="clock-device-status.css">
+  <link rel="stylesheet" href="employee-auth.css">
+
+  <script src="hrms-config.js" defer></script>
+  <script src="employee-auth.js" defer></script>
   <script src="clock.js" defer></script>
   <script src="clock-device-status.js" defer></script>
 </head>
+
 <body>
-  <main class="clock-app employee-app">
+  <!-- Sign-in is visible until the backend verifies the account. -->
+  <section
+    class="employee-login"
+    id="employee-login"
+    aria-labelledby="employee-login-title"
+  >
+    <div class="employee-login-brand">
+      <span class="brand-mark" aria-hidden="true">P</span>
+      <strong>PeopleDesk</strong>
+    </div>
+
+    <p class="eyebrow">EMPLOYEE SPACE</p>
+
+    <h1 id="employee-login-title">
+      Sign in to your clock
+    </h1>
+
+    <p>
+      Use the User ID and password created by your HR administrator.
+    </p>
+
+    <form id="employee-login-form">
+      <label for="employee-login-id">User ID</label>
+
+      <input
+        id="employee-login-id"
+        name="loginId"
+        required
+        maxlength="254"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+      >
+
+      <label for="employee-login-password">
+        Password
+      </label>
+
+      <input
+        id="employee-login-password"
+        name="password"
+        type="password"
+        required
+        maxlength="200"
+        autocomplete="current-password"
+      >
+
+      <button
+        type="submit"
+        class="clock-action"
+        id="employee-login-submit"
+      >
+        Sign in
+      </button>
+    </form>
+
+    <p
+      id="employee-login-message"
+      role="status"
+      aria-live="polite"
+    >
+      Sign-in requires the configured backend to be running.
+    </p>
+
+    <small>
+      Reloading this page signs you out.
+      Contact HR if you need a new account or password assistance.
+    </small>
+
+    <noscript>
+      JavaScript is required to sign in.
+    </noscript>
+  </section>
+
+  <!-- Authentication UI gate; actual data authorization is on the backend. -->
+  <main
+    class="clock-app employee-app"
+    id="employee-app"
+    hidden
+  >
     <header class="topbar">
-      <a class="brand" href="clock.html" aria-label="PeopleDesk employee app">
+      <a
+        class="brand"
+        href="clock.html"
+        aria-label="PeopleDesk employee app"
+      >
         <span class="brand-mark" aria-hidden="true">P</span>
-        <span class="brand-copy"><strong>PeopleDesk</strong><small>EMPLOYEE SPACE</small></span>
+
+        <span class="brand-copy">
+          <strong>PeopleDesk</strong>
+          <small>EMPLOYEE SPACE</small>
+        </span>
       </a>
-      <button id="menu-home-button" class="top-menu-button" type="button" data-page-link="menu" aria-label="Open employee menu">Menu</button>
+
+      <button
+        id="employee-signout"
+        class="top-menu-button"
+        type="button"
+      >
+        Sign out
+      </button>
+
+      <button
+        id="menu-home-button"
+        class="top-menu-button"
+        type="button"
+        data-page-link="menu"
+        aria-label="Open employee menu"
+      >
+        Menu
+      </button>
     </header>
 
     <section class="clock-content employee-content">
       <aside class="demo-notice" role="note">
         <span class="notice-icon" aria-hidden="true">i</span>
-        <p><strong>Frontend preview</strong><br>Attendance and requests are saved only in this browser on this device. They do not sync to the backend and are not official records.</p>
+
+        <p>
+          <strong>Signed-in employee space</strong><br>
+          Clock records are stored by the backend.
+          Leave/WFH requests and leave balances remain
+          clearly labelled local previews.
+        </p>
       </aside>
 
-      <section class="employee-card" aria-label="Current demo employee">
-        <span class="employee-avatar" aria-hidden="true">AC</span>
-        <span class="employee-copy"><small>DEMO EMPLOYEE</small><strong>Alex Chen</strong><span>HR Administrator</span></span>
-        <span class="demo-tag">DEMO</span>
+      <p
+        id="employee-session-message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <section
+        class="employee-card"
+        aria-label="Signed-in employee"
+      >
+        <span class="employee-avatar" aria-hidden="true">
+          AC
+        </span>
+
+        <span class="employee-copy">
+          <small>SIGNED-IN EMPLOYEE</small>
+          <strong id="employee-name">Employee</strong>
+          <span id="employee-user-id"></span>
+        </span>
+
+        <span class="demo-tag">SIGNED IN</span>
       </section>
 
-      <section class="employee-page menu-page" id="page-menu" data-page-panel aria-labelledby="page-title-menu">
+      <!-- clock.js builds the signed-in home dashboard here. -->
+      <section
+        class="employee-page menu-page"
+        id="page-menu"
+        data-page-panel
+        aria-labelledby="page-title-menu"
+      >
         <div class="page-intro">
           <p class="eyebrow">EMPLOYEE SELF-SERVICE</p>
-          <h1 id="page-title-menu">What would you like to do?</h1>
-          <p class="intro">Choose an option to continue.</p>
+
+          <h1 id="page-title-menu">
+            What would you like to do?
+          </h1>
+
+          <p class="intro">
+            Choose an option to continue.
+          </p>
         </div>
+
         <nav class="menu-grid" aria-label="Employee services">
-          <button type="button" class="menu-card" data-page-link="attendance"><span class="menu-card-icon attendance-menu-icon" aria-hidden="true">◷</span><span class="menu-card-copy"><strong>Attendance</strong><small>Clock in/out and view today’s shift</small></span><span class="menu-card-arrow" aria-hidden="true">→</span></button>
-          <button type="button" class="menu-card" data-page-link="leave"><span class="menu-card-icon leave-menu-icon" aria-hidden="true">▤</span><span class="menu-card-copy"><strong>Issue leave</strong><small>Submit a leave request for review</small></span><span class="menu-card-arrow" aria-hidden="true">→</span></button>
-          <button type="button" class="menu-card" data-page-link="wfh"><span class="menu-card-icon wfh-menu-icon" aria-hidden="true">⌂</span><span class="menu-card-copy"><strong>Request WFH</strong><small>Ask to work from home on selected dates</small></span><span class="menu-card-arrow" aria-hidden="true">→</span></button>
-          <button type="button" class="menu-card" data-page-link="about"><span class="menu-card-icon about-menu-icon" aria-hidden="true">ⓘ</span><span class="menu-card-copy"><strong>About</strong><small>Learn about this employee app preview</small></span><span class="menu-card-arrow" aria-hidden="true">→</span></button>
+          <button
+            type="button"
+            class="menu-card"
+            data-page-link="attendance"
+          >
+            <span
+              class="menu-card-icon attendance-menu-icon"
+              aria-hidden="true"
+            >◷</span>
+
+            <span class="menu-card-copy">
+              <strong>Attendance</strong>
+              <small>Clock in/out and view today’s shift</small>
+            </span>
+
+            <span class="menu-card-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="menu-card"
+            data-page-link="leave"
+          >
+            <span
+              class="menu-card-icon leave-menu-icon"
+              aria-hidden="true"
+            >▤</span>
+
+            <span class="menu-card-copy">
+              <strong>Issue leave</strong>
+              <small>Submit a leave request for review</small>
+            </span>
+
+            <span class="menu-card-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="menu-card"
+            data-page-link="wfh"
+          >
+            <span
+              class="menu-card-icon wfh-menu-icon"
+              aria-hidden="true"
+            >⌂</span>
+
+            <span class="menu-card-copy">
+              <strong>Request WFH</strong>
+              <small>Ask to work from home on selected dates</small>
+            </span>
+
+            <span class="menu-card-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="menu-card"
+            data-page-link="about"
+          >
+            <span
+              class="menu-card-icon about-menu-icon"
+              aria-hidden="true"
+            >ⓘ</span>
+
+            <span class="menu-card-copy">
+              <strong>About</strong>
+              <small>Learn about this employee app preview</small>
+            </span>
+
+            <span class="menu-card-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
         </nav>
       </section>
 
-      <section class="employee-page" id="page-attendance" data-page-panel aria-labelledby="page-title-attendance" hidden>
-        <div class="page-intro"><p class="eyebrow">YOUR DAY</p><h1 id="page-title-attendance">Attendance</h1><p class="intro">Clock in or out and check today’s shift.</p></div>
-        <section class="time-card" aria-label="Current device time">
+      <!-- Attendance -->
+      <section
+        class="employee-page"
+        id="page-attendance"
+        data-page-panel
+        aria-labelledby="page-title-attendance"
+        hidden
+      >
+        <div class="page-intro">
+          <p class="eyebrow">YOUR DAY</p>
+          <h1 id="page-title-attendance">Attendance</h1>
+
+          <p class="intro">
+            Clock in or out and check today’s shift.
+          </p>
+        </div>
+
+        <section
+          class="time-card"
+          aria-label="Current device time"
+        >
           <p class="time-label">LOCAL DEVICE TIME</p>
-          <time id="live-time" class="live-time">--:--</time>
-          <p id="live-date" class="live-date">Loading date…</p>
+
+          <time id="live-time" class="live-time">
+            --:--
+          </time>
+
+          <p id="live-date" class="live-date">
+            Loading date…
+          </p>
         </section>
-        <section class="shift-card" aria-labelledby="shift-title">
-          <div class="section-heading"><div><p class="eyebrow">TODAY'S SHIFT</p><h2 id="shift-title">Attendance status</h2></div><span id="shift-status" class="status-pill">Not clocked in</span></div>
+
+        <section
+          class="shift-card"
+          aria-labelledby="shift-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">TODAY'S SHIFT</p>
+              <h2 id="shift-title">Attendance status</h2>
+            </div>
+
+            <span id="shift-status" class="status-pill">
+              Not clocked in
+            </span>
+          </div>
+
           <div class="shift-times">
-            <div class="shift-time-item"><span class="time-icon in-icon" aria-hidden="true">↓</span><span><small>Clock in</small><strong id="clock-in-value">—</strong></span></div>
-            <span class="shift-divider" aria-hidden="true"></span>
-            <div class="shift-time-item"><span class="time-icon out-icon" aria-hidden="true">↑</span><span><small>Clock out</small><strong id="clock-out-value">—</strong></span></div>
+            <div class="shift-time-item">
+              <span
+                class="time-icon in-icon"
+                aria-hidden="true"
+              >↓</span>
+
+              <span>
+                <small>Clock in</small>
+                <strong id="clock-in-value">—</strong>
+              </span>
+            </div>
+
+            <span
+              class="shift-divider"
+              aria-hidden="true"
+            ></span>
+
+            <div class="shift-time-item">
+              <span
+                class="time-icon out-icon"
+                aria-hidden="true"
+              >↑</span>
+
+              <span>
+                <small>Clock out</small>
+                <strong id="clock-out-value">—</strong>
+              </span>
+            </div>
           </div>
         </section>
-        <section class="device-status-card" aria-labelledby="device-status-title">
-          <div class="section-heading device-status-heading"><div><p class="eyebrow">DEVICE CHECK</p><h2 id="device-status-title">Connection status</h2></div><span class="optional-label">Preview</span></div>
-          <div class="device-status-row"><span class="device-status-icon location-icon" aria-hidden="true">⌖</span><span class="device-status-copy"><strong>Location services</strong><small id="location-status" role="status" aria-live="polite">Not checked</small></span><span id="location-indicator" class="device-indicator" aria-hidden="true"></span></div>
-          <button id="location-check" class="location-check" type="button">Check location access</button>
-          <div class="device-status-row network-status-row"><span class="device-status-icon network-icon" aria-hidden="true">⌁</span><span class="device-status-copy"><strong>Internet connection</strong><small id="network-status" role="status" aria-live="polite">Checking…</small></span><span id="network-indicator" class="device-indicator" aria-hidden="true"></span></div>
-          <p class="wifi-limitation">A normal phone browser cannot tell whether you are connected specifically to Wi-Fi (or verify the office network). “Online” may mean Wi-Fi or mobile data.</p>
-          <p id="device-check-message" class="device-check-message" role="status" aria-live="polite"></p>
+
+        <section
+          class="device-status-card"
+          aria-labelledby="device-status-title"
+        >
+          <div class="section-heading device-status-heading">
+            <div>
+              <p class="eyebrow">DEVICE CHECK</p>
+
+              <h2 id="device-status-title">
+                Connection status
+              </h2>
+            </div>
+
+            <span class="optional-label">Preview</span>
+          </div>
+
+          <div class="device-status-row">
+            <span
+              class="device-status-icon location-icon"
+              aria-hidden="true"
+            >⌖</span>
+
+            <span class="device-status-copy">
+              <strong>Location services</strong>
+
+              <small
+                id="location-status"
+                role="status"
+                aria-live="polite"
+              >
+                Not checked
+              </small>
+            </span>
+
+            <span
+              id="location-indicator"
+              class="device-indicator"
+              aria-hidden="true"
+            ></span>
+          </div>
+
+          <button
+            id="location-check"
+            class="location-check"
+            type="button"
+          >
+            Check location access
+          </button>
+
+          <div class="device-status-row network-status-row">
+            <span
+              class="device-status-icon network-icon"
+              aria-hidden="true"
+            >⌁</span>
+
+            <span class="device-status-copy">
+              <strong>Internet connection</strong>
+
+              <small
+                id="network-status"
+                role="status"
+                aria-live="polite"
+              >
+                Checking…
+              </small>
+            </span>
+
+            <span
+              id="network-indicator"
+              class="device-indicator"
+              aria-hidden="true"
+            ></span>
+          </div>
+
+          <p class="wifi-limitation">
+            A normal phone browser cannot tell whether you are connected
+            specifically to Wi-Fi or verify the office network.
+            “Online” may mean Wi-Fi or mobile data.
+          </p>
+
+          <p
+            id="device-check-message"
+            class="device-check-message"
+            role="status"
+            aria-live="polite"
+          ></p>
         </section>
-        <button id="clock-action" class="clock-action" type="button">Clock in</button>
-        <p id="action-message" class="action-message" role="status" aria-live="polite"></p>
-        <p class="privacy-note">Location access is checked only after you tap the button. Coordinates are not saved or sent. Clock actions remain local preview data and are not validated by a server.</p>
+
+        <label
+          class="clock-method-label"
+          for="clock-method"
+        >
+          Clocking method
+        </label>
+
+        <select id="clock-method">
+          <option value="">Loading approved methods…</option>
+        </select>
+
+        <p
+          id="clock-method-note"
+          class="privacy-note"
+        ></p>
+
+        <button
+          id="clock-refresh"
+          class="location-check"
+          type="button"
+        >
+          Refresh attendance
+        </button>
+
+        <p
+          id="clock-business-date"
+          class="privacy-note"
+        ></p>
+
+        <button
+          id="clock-action"
+          class="clock-action"
+          type="button"
+        >
+          Clock in
+        </button>
+
+        <p
+          id="action-message"
+          class="action-message"
+          role="status"
+          aria-live="polite"
+        ></p>
+
+        <p class="privacy-note">
+          Clock actions use server timestamps.
+          Location clocking requests coordinates only after you choose it
+          and clock in/out; coordinates are sent to the backend for
+          validation but are not stored by this starter.
+        </p>
       </section>
 
-      <section class="employee-page" id="page-leave" data-page-panel aria-labelledby="page-title-leave" hidden>
-        <div class="page-intro"><p class="eyebrow">TIME AWAY</p><h1 id="page-title-leave">Issue leave</h1><p class="intro">Submit a leave request for review.</p></div>
+      <!-- Leave preview -->
+      <section
+        class="employee-page"
+        id="page-leave"
+        data-page-panel
+        aria-labelledby="page-title-leave"
+        hidden
+      >
+        <div class="page-intro">
+          <p class="eyebrow">TIME AWAY</p>
+          <h1 id="page-title-leave">Issue leave</h1>
+          <p class="intro">Submit a leave request for review.</p>
+        </div>
+
         <form class="request-card" id="leave-request-form">
-          <label>Leave type<select name="type" required><option value="">Choose leave type</option><option>Annual leave</option><option>Medical leave</option><option>Emergency leave</option></select></label>
-          <div class="form-row"><label>From<input name="startDate" type="date" required></label><label>To<input name="endDate" type="date" required></label></div>
-          <label>Reason<textarea name="reason" rows="3" maxlength="500" required placeholder="Add a short reason for your request"></textarea></label>
-          <button class="clock-action form-submit" type="submit">Submit leave request</button>
-          <p class="form-message" id="leave-form-message" role="status" aria-live="polite"></p>
-          <p class="form-disclaimer">Demo only: this request is stored in this browser. It is not sent to your manager.</p>
+          <label>
+            Leave type
+
+            <select name="type" required>
+              <option value="">Choose leave type</option>
+              <option>Annual leave</option>
+              <option>Medical leave</option>
+              <option>Emergency leave</option>
+            </select>
+          </label>
+
+          <div class="form-row">
+            <label>
+              From
+              <input name="startDate" type="date" required>
+            </label>
+
+            <label>
+              To
+              <input name="endDate" type="date" required>
+            </label>
+          </div>
+
+          <label>
+            Reason
+
+            <textarea
+              name="reason"
+              rows="3"
+              maxlength="500"
+              required
+              placeholder="Add a short reason for your request"
+            ></textarea>
+          </label>
+
+          <button
+            class="clock-action form-submit"
+            type="submit"
+          >
+            Submit leave request
+          </button>
+
+          <p
+            class="form-message"
+            id="leave-form-message"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <p class="form-disclaimer">
+            Demo only: this request is stored in this browser.
+            It is not sent to your manager.
+          </p>
         </form>
-        <section class="request-history" aria-labelledby="leave-history-title"><div class="section-heading"><div><p class="eyebrow">THIS DEVICE</p><h2 id="leave-history-title">Recent leave requests</h2></div></div><div id="leave-request-list" class="request-list"></div></section>
+
+        <section
+          class="request-history"
+          aria-labelledby="leave-history-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THIS DEVICE</p>
+
+              <h2 id="leave-history-title">
+                Recent leave requests
+              </h2>
+            </div>
+          </div>
+
+          <div
+            id="leave-request-list"
+            class="request-list"
+          ></div>
+        </section>
       </section>
 
-      <section class="employee-page" id="page-wfh" data-page-panel aria-labelledby="page-title-wfh" hidden>
-        <div class="page-intro"><p class="eyebrow">WORK ARRANGEMENT</p><h1 id="page-title-wfh">Request WFH</h1><p class="intro">Ask to work from home on selected dates.</p></div>
+      <!-- WFH preview -->
+      <section
+        class="employee-page"
+        id="page-wfh"
+        data-page-panel
+        aria-labelledby="page-title-wfh"
+        hidden
+      >
+        <div class="page-intro">
+          <p class="eyebrow">WORK ARRANGEMENT</p>
+          <h1 id="page-title-wfh">Request WFH</h1>
+
+          <p class="intro">
+            Ask to work from home on selected dates.
+          </p>
+        </div>
+
         <form class="request-card" id="wfh-request-form">
-          <div class="form-row"><label>From<input name="startDate" type="date" required></label><label>To<input name="endDate" type="date" required></label></div>
-          <label>Reason or details<textarea name="reason" rows="4" maxlength="500" required placeholder="Share any details for your request"></textarea></label>
-          <button class="clock-action form-submit" type="submit">Submit WFH request</button>
-          <p class="form-message" id="wfh-form-message" role="status" aria-live="polite"></p>
-          <p class="form-disclaimer">Demo only: this request is stored in this browser. It is not sent to your manager.</p>
+          <div class="form-row">
+            <label>
+              From
+              <input name="startDate" type="date" required>
+            </label>
+
+            <label>
+              To
+              <input name="endDate" type="date" required>
+            </label>
+          </div>
+
+          <label>
+            Reason or details
+
+            <textarea
+              name="reason"
+              rows="4"
+              maxlength="500"
+              required
+              placeholder="Share any details for your request"
+            ></textarea>
+          </label>
+
+          <button
+            class="clock-action form-submit"
+            type="submit"
+          >
+            Submit WFH request
+          </button>
+
+          <p
+            class="form-message"
+            id="wfh-form-message"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <p class="form-disclaimer">
+            Demo only: this request is stored in this browser.
+            It is not sent to your manager.
+          </p>
         </form>
-        <section class="request-history" aria-labelledby="wfh-history-title"><div class="section-heading"><div><p class="eyebrow">THIS DEVICE</p><h2 id="wfh-history-title">Recent WFH requests</h2></div></div><div id="wfh-request-list" class="request-list"></div></section>
+
+        <section
+          class="request-history"
+          aria-labelledby="wfh-history-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THIS DEVICE</p>
+
+              <h2 id="wfh-history-title">
+                Recent WFH requests
+              </h2>
+            </div>
+          </div>
+
+          <div
+            id="wfh-request-list"
+            class="request-list"
+          ></div>
+        </section>
       </section>
 
-      <section class="employee-page" id="page-about" data-page-panel aria-labelledby="page-title-about" hidden>
-        <div class="page-intro"><p class="eyebrow">PEOPLEDESK</p><h1 id="page-title-about">About</h1><p class="intro">Your employee self-service preview.</p></div>
-        <section class="about-card"><span class="about-mark" aria-hidden="true">P</span><h2>PeopleDesk employee space</h2><p>This mobile-first frontend is a prototype for attendance, leave requests, and work-from-home requests.</p><ul><li>Attendance and requests stay in this browser only.</li><li>No employee sign-in page or backend sync is connected yet.</li><li>Phone browsers cannot verify the Wi-Fi network name.</li><li>Face verification is not implemented and does not access the camera.</li></ul><p class="about-version">Prototype · Employee frontend</p></section>
-        <p class="privacy-note">Do not enter real or sensitive employee information in this preview.</p>
+      <!-- About -->
+      <section
+        class="employee-page"
+        id="page-about"
+        data-page-panel
+        aria-labelledby="page-title-about"
+        hidden
+      >
+        <div class="page-intro">
+          <p class="eyebrow">PEOPLEDESK</p>
+          <h1 id="page-title-about">About</h1>
+          <p class="intro">Your signed-in employee space.</p>
+        </div>
+
+        <section class="about-card">
+          <span class="about-mark" aria-hidden="true">P</span>
+
+          <h2>PeopleDesk employee space</h2>
+
+          <p>
+            This mobile-first frontend is a prototype for attendance,
+            leave requests, and work-from-home requests.
+          </p>
+
+          <ul>
+            <li>
+              Sign in with the User ID and password created
+              in Settings → Users.
+            </li>
+
+            <li>
+              Attendance is validated and stored by the backend.
+              Leave/WFH requests remain local drafts, scoped
+              to your account on this device.
+            </li>
+
+            <li>
+              Phone browsers cannot verify the Wi-Fi network name.
+            </li>
+
+            <li>
+              Face verification is not implemented and
+              does not access the camera.
+            </li>
+          </ul>
+
+          <p class="about-version">
+            Prototype · Employee frontend
+          </p>
+        </section>
+
+        <p class="privacy-note">
+          Do not enter real or sensitive employee information
+          in this preview.
+        </p>
       </section>
     </section>
 
     <nav class="employee-nav" aria-label="Employee app menu">
-      <button type="button" class="employee-nav-item active" data-page-link="menu" aria-current="page"><span aria-hidden="true">⌂</span><small>Menu</small></button>
-      <button type="button" class="employee-nav-item" data-page-link="attendance"><span aria-hidden="true">◷</span><small>Attendance</small></button>
-      <button type="button" class="employee-nav-item" data-page-link="leave"><span aria-hidden="true">▤</span><small>Issue leave</small></button>
-      <button type="button" class="employee-nav-item" data-page-link="wfh"><span aria-hidden="true">⌁</span><small>Request WFH</small></button>
-      <button type="button" class="employee-nav-item" data-page-link="about"><span aria-hidden="true">ⓘ</span><small>About</small></button>
+      <button
+        type="button"
+        class="employee-nav-item active"
+        data-page-link="menu"
+        aria-current="page"
+      >
+        <span aria-hidden="true">⌂</span>
+        <small>Menu</small>
+      </button>
+
+      <button
+        type="button"
+        class="employee-nav-item"
+        data-page-link="attendance"
+      >
+        <span aria-hidden="true">◷</span>
+        <small>Attendance</small>
+      </button>
+
+      <button
+        type="button"
+        class="employee-nav-item"
+        data-page-link="leave"
+      >
+        <span aria-hidden="true">▤</span>
+        <small>Issue leave</small>
+      </button>
+
+      <button
+        type="button"
+        class="employee-nav-item"
+        data-page-link="wfh"
+      >
+        <span aria-hidden="true">⌁</span>
+        <small>Request WFH</small>
+      </button>
+
+      <button
+        type="button"
+        class="employee-nav-item"
+        data-page-link="about"
+      >
+        <span aria-hidden="true">ⓘ</span>
+        <small>About</small>
+      </button>
     </nav>
-    <footer class="page-footer">PeopleDesk HRMS · Employee app preview</footer>
+
+    <footer class="page-footer">
+      PeopleDesk HRMS · Employee app preview
+    </footer>
   </main>
 </body>
 </html>
