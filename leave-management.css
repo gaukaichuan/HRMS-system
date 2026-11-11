@@ -1456,3 +1456,9 @@ body:has(.leave-dialog[open]) {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* Bold text throughout the interface */
+body,
+body * {
+  font-weight: 700 !important;
+}
