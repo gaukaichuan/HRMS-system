@@ -1,0 +1,27 @@
+{
+  "name": "peopledesk-hrms-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Starter attendance API for the PeopleDesk HRMS prototype",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "bootstrap-user": "node bootstrap-user.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "ipaddr.js": "^2.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.1.5"
+  }
+}
