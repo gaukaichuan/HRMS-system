@@ -1,8 +1,8 @@
 {
-  "id": "peopledesk-mobile-clock",
-  "name": "PeopleDesk Mobile Clock",
-  "short_name": "PeopleDesk Clock",
-  "description": "Mobile clock-in and clock-out preview for PeopleDesk HRMS.",
+  "id": "peopledesk-employee-app",
+  "name": "PeopleDesk Employee App Preview",
+  "short_name": "PeopleDesk",
+  "description": "Employee attendance and leave request frontend preview.",
   "start_url": "./clock.html",
   "scope": "./",
   "display": "standalone",
