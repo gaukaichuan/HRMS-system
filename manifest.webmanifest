@@ -1,0 +1,20 @@
+{
+  "id": "peopledesk-mobile-clock",
+  "name": "PeopleDesk Mobile Clock",
+  "short_name": "PeopleDesk Clock",
+  "description": "Mobile clock-in and clock-out preview for PeopleDesk HRMS.",
+  "start_url": "./clock.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7fb",
+  "theme_color": "#f6f7fb",
+  "icons": [
+    {
+      "src": "./clock-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

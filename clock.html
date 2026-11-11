@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7fb">
+  <meta name="description" content="Mobile clock-in and clock-out preview for PeopleDesk HRMS.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="clock-icon.svg" type="image/svg+xml">
+  <title>Mobile clock · PeopleDesk HRMS</title>
+  <link rel="stylesheet" href="clock.css">
+  <script src="clock.js" defer></script>
+</head>
+<body>
+  <main class="clock-app">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="PeopleDesk HRMS home">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span class="brand-copy"><strong>PeopleDesk</strong><small>HRMS WORKSPACE</small></span>
+      </a>
+      <a class="back-link" href="index.html">← Dashboard</a>
+    </header>
+
+    <section class="clock-content" aria-labelledby="page-title">
+      <p class="eyebrow">MOBILE ATTENDANCE</p>
+      <h1 id="page-title">Your workday</h1>
+      <p class="intro">Clock in or out in just a tap.</p>
+
+      <aside class="demo-notice" role="note">
+        <span class="notice-icon" aria-hidden="true">i</span>
+        <p><strong>Preview only</strong><br>Clock actions are saved only in this browser on this device. They do not sync to the HRMS backend and are not official attendance records.</p>
+      </aside>
+
+      <section class="employee-card" aria-label="Demo employee">
+        <span class="employee-avatar" aria-hidden="true">AC</span>
+        <span class="employee-copy"><small>DEMO EMPLOYEE</small><strong>Alex Chen</strong><span>HR Administrator</span></span>
+        <span class="demo-tag">DEMO</span>
+      </section>
+
+      <section class="time-card" aria-label="Current time">
+        <p class="time-label">LOCAL DEVICE TIME</p>
+        <time id="live-time" class="live-time">--:--</time>
+        <p id="live-date" class="live-date">Loading date…</p>
+      </section>
+
+      <section class="shift-card" aria-labelledby="shift-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TODAY'S SHIFT</p>
+            <h2 id="shift-title">Attendance status</h2>
+          </div>
+          <span id="shift-status" class="status-pill">Not clocked in</span>
+        </div>
+        <div class="shift-times">
+          <div class="shift-time-item">
+            <span class="time-icon in-icon" aria-hidden="true">↓</span>
+            <span><small>Clock in</small><strong id="clock-in-value">—</strong></span>
+          </div>
+          <span class="shift-divider" aria-hidden="true"></span>
+          <div class="shift-time-item">
+            <span class="time-icon out-icon" aria-hidden="true">↑</span>
+            <span><small>Clock out</small><strong id="clock-out-value">—</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="method-section" aria-labelledby="method-title">
+        <div class="section-heading method-heading">
+          <div>
+            <p class="eyebrow">VERIFICATION METHOD</p>
+            <h2 id="method-title">Choose a method</h2>
+          </div>
+          <span class="optional-label">Preview</span>
+        </div>
+
+        <div class="method-list" role="group" aria-label="Choose a clocking method">
+          <button type="button" class="method-option selected" data-method="wifi" aria-pressed="true">
+            <span class="method-icon wifi-icon" aria-hidden="true">⌁</span>
+            <span class="method-copy"><strong>Office Wi-Fi</strong><small>Network check · preview only</small></span>
+            <span class="method-radio" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="method-option" data-method="location" aria-pressed="false">
+            <span class="method-icon location-icon" aria-hidden="true">⌖</span>
+            <span class="method-copy"><strong>My location</strong><small>Optional phone permission</small></span>
+            <span class="method-radio" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="method-option unavailable" data-method="face" aria-pressed="false" aria-disabled="true">
+            <span class="method-icon face-icon" aria-hidden="true">◎</span>
+            <span class="method-copy"><strong>Face verification</strong><small>Not enabled for this preview</small></span>
+            <span class="method-badge">Unavailable</span>
+          </button>
+        </div>
+
+        <div id="method-detail" class="method-detail" aria-live="polite">
+          A browser cannot confirm the name of the Wi-Fi network. This method is for layout preview only.
+        </div>
+        <button id="location-check" class="location-check" type="button" hidden>Check my location</button>
+      </section>
+
+      <button id="clock-action" class="clock-action" type="button">Clock in</button>
+      <p id="action-message" class="action-message" role="status" aria-live="polite"></p>
+      <p class="privacy-note">Location is requested only after you choose it. Its coordinates are not saved. Face verification stays unavailable until a reviewed provider, consent flow, and non-biometric option are approved.</p>
+    </section>
+
+    <footer class="page-footer">PeopleDesk HRMS · Mobile clock preview</footer>
+  </main>
+</body>
+</html>
