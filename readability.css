@@ -80,3 +80,263 @@ td { font-size: 12px; }
 @media (max-width: 700px) {
   .page-heading h1 { font-size: 24px; }
 }
+
+/* Modern master-data settings, inspired by the supplied reference. */
+#view-settings {
+  --settings-ink: #252b3b;
+  --settings-muted: #788198;
+  --settings-line: #e7eaf2;
+  --settings-accent: #6956e8;
+}
+
+#view-settings .page-heading {
+  margin-bottom: 24px;
+}
+
+#view-settings .eyebrow {
+  color: #7c86a0;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+}
+
+#view-settings .page-heading h1 {
+  color: var(--settings-ink);
+  font-size: 28px;
+  letter-spacing: -0.8px;
+}
+
+#view-settings .subtitle {
+  color: var(--settings-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#view-settings .master-data-home {
+  max-width: 980px;
+  gap: 18px;
+}
+
+#view-settings .master-data-tile {
+  border-color: var(--settings-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 26px rgba(37, 43, 59, 0.035);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+#view-settings .master-data-tile:hover {
+  border-color: #d7d0ff;
+  box-shadow: 0 12px 30px rgba(61, 49, 145, 0.08);
+  transform: translateY(-1px);
+}
+
+#view-settings .master-data-tile-copy strong {
+  color: var(--settings-ink);
+  font-size: 16px;
+}
+
+#view-settings .master-data-tile-copy small {
+  color: var(--settings-muted) !important;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+#view-settings .master-data-section {
+  max-width: 980px;
+}
+
+#view-settings .master-section-heading {
+  gap: 20px;
+  margin: 0 0 18px;
+}
+
+#view-settings .master-section-heading > .button-secondary {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--settings-line);
+  border-radius: 9px;
+  background: #fff;
+  color: #49536b;
+  font-size: 13px;
+}
+
+#view-settings .master-section-heading > div {
+  gap: 14px;
+}
+
+#view-settings .master-section-heading .master-data-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f0edff;
+  color: var(--settings-accent);
+  font-size: 20px;
+}
+
+#view-settings .master-section-heading h2 {
+  color: var(--settings-ink);
+  font-size: 18px;
+}
+
+#view-settings .master-section-heading p {
+  color: var(--settings-muted) !important;
+  font-size: 12px;
+}
+
+#view-settings .master-data-section .master-card {
+  max-width: 760px;
+  padding: 22px;
+  border: 1px solid var(--settings-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(37, 43, 59, 0.04);
+}
+
+#view-settings .master-data-section .master-card h2 {
+  color: var(--settings-ink);
+  font-size: 16px;
+}
+
+#view-settings .master-data-section .master-card > p {
+  max-width: 660px;
+  color: var(--settings-muted) !important;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+#view-settings .eleave-add-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(160px, .8fr) minmax(130px, .65fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  margin: 0 0 18px;
+  border: 1px solid #eceef5;
+  border-radius: 12px;
+  background: #fafaff;
+}
+
+#view-settings .eleave-add-form label,
+#view-settings .eleave-type-row label {
+  display: grid;
+  gap: 7px;
+  color: #4a5368;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#view-settings .eleave-add-form input,
+#view-settings .eleave-add-form select,
+#view-settings .eleave-type-row input:not([type="checkbox"]) {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid #dfe3ed;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 10px;
+  color: #30394f;
+  font: 13px 'DM Sans', sans-serif;
+}
+
+#view-settings .eleave-add-form input:focus,
+#view-settings .eleave-add-form select:focus,
+#view-settings .eleave-type-row input:focus {
+  outline: 3px solid #e6e1ff;
+  border-color: #a89af5;
+}
+
+#view-settings .eleave-add-form .button-primary {
+  min-height: 40px;
+  border-radius: 9px;
+  padding: 9px 15px;
+  background: var(--settings-accent);
+  font-size: 13px;
+}
+
+#view-settings .eleave-type-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, .65fr) auto minmax(150px, .8fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+#view-settings .eleave-type-row label {
+  min-width: 0;
+}
+
+#view-settings .eleave-type-row .eleave-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+#view-settings .eleave-type-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--settings-accent);
+}
+
+#view-settings .eleave-type-row .eleave-mode {
+  color: var(--settings-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#view-settings .eleave-type-row .button-secondary {
+  min-height: 38px;
+  border: 1px solid var(--settings-line);
+  border-radius: 9px;
+  background: #fff;
+  color: #4a5368;
+  font-size: 12px;
+}
+
+#view-settings .eleave-master-note,
+#view-settings .master-note {
+  color: var(--settings-muted) !important;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+#view-settings .settings-feedback {
+  max-width: 760px;
+  line-height: 1.5;
+}
+
+@media (max-width: 850px) {
+  #view-settings .eleave-add-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #view-settings .eleave-type-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  #view-settings .eleave-type-row .eleave-active {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 520px) {
+  #view-settings .page-heading h1 {
+    font-size: 25px;
+  }
+
+  #view-settings .eleave-add-form,
+  #view-settings .eleave-type-row {
+    grid-template-columns: 1fr;
+  }
+
+  #view-settings .master-data-section .master-card {
+    padding: 17px;
+  }
+
+  #view-settings .master-section-heading > div {
+    align-items: flex-start;
+  }
+}
