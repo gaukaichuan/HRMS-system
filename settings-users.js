@@ -12,8 +12,8 @@
     return;
   }
 
-  // Remove the earlier standalone panel, if present.
-  // Do not load both settings-users.js and user-management.js.
+  // Remove an earlier standalone Users panel, if present.
+  // Do not load user-management.js alongside this script.
   document.querySelector('#view-users')?.remove();
   document.querySelector('[data-view="users"]')?.remove();
 
@@ -238,7 +238,7 @@
   document.head.append(style);
 
   // --------------------------------------------------
-  // Settings menu tile
+  // Settings tile
   // --------------------------------------------------
 
   const tile = document.createElement('button');
@@ -254,8 +254,9 @@
 
     <span class="master-data-tile-copy">
       <strong>Users</strong>
+
       <small>
-        Manage backend login accounts.
+        Manage employee clock login accounts.
         Administrator sign-in required.
       </small>
     </span>
@@ -268,7 +269,7 @@
   home.append(tile);
 
   // --------------------------------------------------
-  // Users panel
+  // Panel markup
   // --------------------------------------------------
 
   const section = document.createElement('section');
@@ -293,7 +294,8 @@
           <h2 id="users-title">Users</h2>
 
           <p class="up-muted">
-            Manage PeopleDesk backend login accounts.
+            Create and manage the accounts used to sign in
+            to the employee clock screen.
           </p>
         </div>
 
@@ -308,10 +310,11 @@
       </div>
 
       <p class="up-notice">
-        Backend accounts are separate from the sample
-        employee directory and mobile clock demo.
-        This panel does not add frontend page permissions.
-        No connection is made until you sign in.
+        Create a User ID and password here for the employee
+        clock screen (clock.html).
+        Deactivation blocks employee sign-in and clock API access.
+        Administrator sign-in is required to protect this account list.
+        The main HRMS workspace is not login-protected by this change.
       </p>
 
       <p
@@ -377,8 +380,8 @@
 
         <p class="up-muted">
           Use the administrator created with the backend
-          bootstrap command. The session stays in memory
-          only; reloading signs you out.
+          bootstrap command. The session stays in memory only;
+          reloading signs you out.
         </p>
       </div>
 
@@ -394,6 +397,26 @@
             </p>
 
             <form id="users-create-form">
+              <label>
+                User ID
+
+                <input
+                  name="loginId"
+                  required
+                  minlength="3"
+                  maxlength="50"
+                  pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,49}"
+                  autocomplete="off"
+                  aria-describedby="users-id-help"
+                >
+              </label>
+
+              <small id="users-id-help">
+                3–50 letters, numbers, dots, underscores or hyphens.
+                Start with a letter or number.
+                User IDs are case-insensitive.
+              </small>
+
               <label>
                 Display name
 
@@ -432,9 +455,8 @@
               </label>
 
               <small id="users-password-help">
-                Use at least 12 characters.
-                Share credentials only through an
-                approved secure channel.
+                Use at least 12 characters and at most 72 UTF-8 bytes.
+                Share credentials only through an approved secure channel.
               </small>
 
               <button
@@ -466,7 +488,7 @@
                 <input
                   id="users-search"
                   type="search"
-                  placeholder="Name or email"
+                  placeholder="User ID, name or email"
                 >
               </label>
 
@@ -474,17 +496,9 @@
                 Status
 
                 <select id="users-status-filter">
-                  <option value="all">
-                    All accounts
-                  </option>
-
-                  <option value="active">
-                    Active
-                  </option>
-
-                  <option value="inactive">
-                    Inactive
-                  </option>
+                  <option value="all">All accounts</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </label>
             </div>
@@ -499,6 +513,7 @@
               <table aria-label="Backend login accounts">
                 <thead>
                   <tr>
+                    <th scope="col">User ID</th>
                     <th scope="col">User</th>
                     <th scope="col">Role</th>
                     <th scope="col">Status</th>
@@ -555,10 +570,14 @@
   }
 
   // --------------------------------------------------
-  // State and helpers
+  // State
   // --------------------------------------------------
 
   const el = (id) => section.querySelector(`#${id}`);
+
+  el('users-api').value =
+    window.HRMS_CONFIG?.apiBaseUrl ||
+    'http://localhost:3000';
 
   const root = el('view-users');
   const login = el('users-login-form');
@@ -601,10 +620,7 @@
       });
   }
 
-  function signOut(
-    message = 'Signed out.',
-    error = false
-  ) {
+  function signOut(message = 'Signed out.', error = false) {
     generation++;
 
     controller.abort();
@@ -673,14 +689,10 @@
   }
 
   // --------------------------------------------------
-  // Backend requests
+  // API
   // --------------------------------------------------
 
-  async function request(
-    path,
-    method = 'GET',
-    body
-  ) {
+  async function request(path, method = 'GET', body) {
     const stamp = generation;
     const authenticated = Boolean(token);
     const headers = {};
@@ -690,7 +702,7 @@
     }
 
     if (authenticated) {
-      headers.Authorization = `Bearer ${token}`;
+      headers.Authorization = 'Bearer ' + token;
     }
 
     let response;
@@ -699,11 +711,7 @@
       response = await fetch(base + path, {
         method,
         headers,
-
-        body: body
-          ? JSON.stringify(body)
-          : undefined,
-
+        body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
         cache: 'no-store',
         credentials: 'omit',
@@ -726,8 +734,7 @@
       );
     }
 
-    const data = await response.json()
-      .catch(() => ({}));
+    const data = await response.json().catch(() => ({}));
 
     if (stamp !== generation) {
       throw new DOMException(
@@ -765,7 +772,7 @@
   }
 
   // --------------------------------------------------
-  // Account table
+  // Account list
   // --------------------------------------------------
 
   function render() {
@@ -777,7 +784,7 @@
 
     const visible = users.filter((user) => {
       const matchesSearch =
-        `${user.displayName} ${user.email}`
+        `${user.loginId || user.email} ${user.displayName} ${user.email}`
           .toLowerCase()
           .includes(query);
 
@@ -799,9 +806,12 @@
       const name = document.createElement('strong');
       const email = document.createElement('small');
 
-      // Use textContent for account data, never innerHTML.
+      // Account data is always rendered as text.
       name.textContent = user.displayName;
       email.textContent = user.email;
+
+      row.insertCell().textContent =
+        user.loginId || user.email;
 
       row.insertCell().append(name, email);
 
@@ -835,8 +845,7 @@
             ? 'Your account'
             : 'Last active admin';
       } else {
-        const button =
-          document.createElement('button');
+        const button = document.createElement('button');
 
         button.type = 'button';
         button.className = 'button';
@@ -862,7 +871,7 @@
       const row = document.createElement('tr');
       const cell = row.insertCell();
 
-      cell.colSpan = 4;
+      cell.colSpan = 5;
 
       cell.textContent = ready
         ? 'No accounts match these filters.'
@@ -1040,7 +1049,7 @@
   });
 
   // --------------------------------------------------
-  // Create employee login
+  // Create employee account
   // --------------------------------------------------
 
   create.addEventListener('submit', (event) => {
@@ -1056,6 +1065,9 @@
           '/v1/admin/users',
           'POST',
           {
+            loginId:
+              create.elements.loginId.value.trim(),
+
             displayName:
               create.elements.displayName.value.trim(),
 
@@ -1068,19 +1080,15 @@
         );
 
         saved = true;
-
         create.reset();
 
         await refresh();
 
         feedback(
-          `Account created for ${data.user.displayName}.`
+          `Employee clock account created: ${data.user.loginId || data.user.email}. Open clock.html to sign in.`
         );
       } catch (error) {
-        if (
-          saved &&
-          error.name !== 'AbortError'
-        ) {
+        if (saved && error.name !== 'AbortError') {
           error.message =
             'Account created, but the list could not refresh. ' +
             error.message;
@@ -1094,7 +1102,7 @@
   });
 
   // --------------------------------------------------
-  // Refresh
+  // Refresh list
   // --------------------------------------------------
 
   el('users-refresh').addEventListener('click', () => {
@@ -1107,7 +1115,7 @@
   });
 
   // --------------------------------------------------
-  // Activate / deactivate confirmation
+  // Activate / deactivate
   // --------------------------------------------------
 
   el('users-rows').addEventListener('click', (event) => {
@@ -1144,8 +1152,6 @@
     el('users-confirm-button').textContent =
       user.active ? 'Deactivate' : 'Activate';
 
-    // Reset this before every opening so Escape cannot
-    // reuse a previous "confirm" return value.
     dialog.returnValue = 'cancel';
     dialog.showModal();
   });
@@ -1156,7 +1162,6 @@
 
   dialog.addEventListener('close', () => {
     const change = pending;
-
     pending = null;
 
     if (
@@ -1189,10 +1194,7 @@
             : 'Account deactivated.'
         );
       } catch (error) {
-        if (
-          saved &&
-          error.name !== 'AbortError'
-        ) {
+        if (saved && error.name !== 'AbortError') {
           error.message =
             'Access changed, but the list could not refresh. ' +
             error.message;
@@ -1204,13 +1206,10 @@
   });
 
   // --------------------------------------------------
-  // Search, filters and session cleanup
+  // Search and cleanup
   // --------------------------------------------------
 
-  el('users-search').addEventListener(
-    'input',
-    render
-  );
+  el('users-search').addEventListener('input', render);
 
   el('users-status-filter').addEventListener(
     'change',
