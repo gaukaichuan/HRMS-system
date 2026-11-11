@@ -1012,7 +1012,7 @@ body:has(.leave-dialog[open]) {
   background: #86efac;
 }
 
-/* Employee-by-employee calendar, inspired by the supplied weekly planner. */
+/* Employee-by-employee calendar. */
 
 #view-leave-calendar .leave-heading-actions,
 .tl-navigation {
@@ -1407,4 +1407,52 @@ body:has(.leave-dialog[open]) {
   .tl-person strong {
     font-size: 12px;
   }
+}
+
+/* Readability update for the leave views and dialogs. */
+
+.leave-table th {
+  font-size: 12px;
+  color: #626879;
+  line-height: 1.5;
+}
+
+.leave-table td,
+.leave-table td strong {
+  font-size: 13px;
+}
+
+.leave-cell-small {
+  font-size: 12px;
+  color: #626879;
+}
+
+.leave-status,
+:is(#view-leave, #view-leave-calendar) .table-footer,
+.leave-legend,
+.leave-weekday,
+.leave-calendar-day > time,
+.leave-holiday,
+.leave-event {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.leave-legend,
+.leave-weekday,
+:is(#view-leave, #view-leave-calendar) .table-footer {
+  color: #626879;
+}
+
+.leave-calendar-day.outside > time {
+  color: #626879;
+}
+
+.leave-holiday {
+  color: #805019;
+}
+
+.leave-event {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
