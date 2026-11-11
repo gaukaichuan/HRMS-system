@@ -3,6 +3,7 @@ require('dotenv').config();
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const express = require('express');
@@ -13,11 +14,25 @@ const jwt = require('jsonwebtoken');
 const Database = require('better-sqlite3');
 const { z } = require('zod');
 
+const {
+  LOGIN_ID_PATTERN,
+  normalizeLoginId,
+  fitsBcryptPassword,
+  migrateLoginIds
+} = require('./account-support');
+
+// --------------------------------------------------
+// Configuration
+// --------------------------------------------------
+
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || '';
+
 const ISSUER = 'peopledesk-hrms-api';
 const AUDIENCE = 'peopledesk-hrms-client';
-const BUSINESS_TIME_ZONE = process.env.BUSINESS_TIME_ZONE || 'UTC';
+
+const BUSINESS_TIME_ZONE =
+  process.env.BUSINESS_TIME_ZONE || 'UTC';
 
 if (JWT_SECRET.length < 32) {
   throw new Error(
@@ -29,7 +44,7 @@ new Intl.DateTimeFormat('en', {
   timeZone: BUSINESS_TIME_ZONE
 });
 
-const parseOptionalNumber = (name) => {
+function parseOptionalNumber(name) {
   const raw = process.env[name];
 
   if (raw === undefined || raw === '') {
@@ -43,7 +58,7 @@ const parseOptionalNumber = (name) => {
   }
 
   return value;
-};
+}
 
 const geofence = {
   latitude: parseOptionalNumber('HRMS_GEOFENCE_LATITUDE'),
@@ -95,6 +110,10 @@ for (const cidr of wifiCidrs) {
   }
 }
 
+// --------------------------------------------------
+// Express and middleware
+// --------------------------------------------------
+
 const app = express();
 
 const allowedOrigins = (
@@ -118,7 +137,9 @@ app.use(cors({
       new Error('Origin is not allowed by CORS.')
     );
   },
+
   methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+
   allowedHeaders: ['Authorization', 'Content-Type']
 }));
 
@@ -132,6 +153,7 @@ const loginLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+
   message: {
     error: 'Too many sign-in attempts. Try again later.'
   }
@@ -158,52 +180,100 @@ db.pragma('foreign_keys = ON');
 db.exec(`
   CREATE TABLE IF NOT EXISTS employees (
     id TEXT PRIMARY KEY,
+
     email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+
     display_name TEXT NOT NULL,
+
     password_hash TEXT NOT NULL,
+
     role TEXT NOT NULL DEFAULT 'employee'
       CHECK (role IN ('employee', 'admin')),
+
     active INTEGER NOT NULL DEFAULT 1
       CHECK (active IN (0, 1)),
+
     created_at TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS attendance_days (
     id TEXT PRIMARY KEY,
+
     employee_id TEXT NOT NULL REFERENCES employees(id),
+
     business_date TEXT NOT NULL,
+
     clock_in_at TEXT NOT NULL,
+
     clock_in_method TEXT NOT NULL
       CHECK (clock_in_method IN ('wifi', 'location')),
+
     clock_out_at TEXT,
+
     clock_out_method TEXT
       CHECK (
         clock_out_method IS NULL
         OR clock_out_method IN ('wifi', 'location')
       ),
+
     UNIQUE (employee_id, business_date),
+
     CHECK (
       (clock_out_at IS NULL) = (clock_out_method IS NULL)
     )
   );
 
   CREATE INDEX IF NOT EXISTS attendance_employee_date
-    ON attendance_days (employee_id, business_date DESC);
+    ON attendance_days (
+      employee_id,
+      business_date DESC
+    );
 `);
 
+// Adds login_id and backfills existing accounts from email.
+// Existing employee and attendance records are preserved.
+migrateLoginIds(db);
+
 // --------------------------------------------------
-// Validation schemas
+// Validation
 // --------------------------------------------------
+
+// Preserve the existing login password range for compatibility.
+// The bcrypt byte limit is enforced when creating new passwords.
+const passwordSchema = z.string().min(1).max(200);
 
 const loginSchema = z.object({
-  email: z.string().trim().email().max(254),
-  password: z.string().min(1).max(200)
-}).strict();
+  loginId: z.string().trim().min(1).max(254).optional(),
+
+  email: z.string().trim().email().max(254).optional(),
+
+  password: passwordSchema
+})
+  .strict()
+  .refine(
+    (value) => (
+      (value.loginId !== undefined) !==
+      (value.email !== undefined)
+    ),
+    'Provide exactly one of loginId or email.'
+  );
 
 const userCreateSchema = z.object({
+  loginId: z.string()
+    .trim()
+    .regex(LOGIN_ID_PATTERN)
+    .optional(),
+
   email: z.string().trim().email().max(254),
+
   displayName: z.string().trim().min(1).max(120),
-  password: z.string().min(12).max(200)
+
+  password: passwordSchema
+    .min(12)
+    .refine(
+      fitsBcryptPassword,
+      'Passwords must not exceed 72 UTF-8 bytes.'
+    )
 }).strict();
 
 const userStatusSchema = z.object({
@@ -212,10 +282,16 @@ const userStatusSchema = z.object({
 
 const clockSchema = z.object({
   method: z.enum(['wifi', 'location', 'face']),
+
   location: z.object({
     latitude: z.number().finite().min(-90).max(90),
+
     longitude: z.number().finite().min(-180).max(180),
-    accuracyMeters: z.number().finite().positive().max(10000)
+
+    accuracyMeters: z.number()
+      .finite()
+      .positive()
+      .max(10000)
   }).strict().optional()
 }).strict();
 
@@ -294,6 +370,7 @@ function verifyClockMethod(method, location, req) {
   if (method === 'face') {
     return {
       status: 501,
+
       error:
         'Face verification is not configured. Use an approved alternative method.'
     };
@@ -309,6 +386,7 @@ function verifyClockMethod(method, location, req) {
     if (!approved) {
       return {
         status: 403,
+
         error:
           'Clock-in/out is only available from an approved network.'
       };
@@ -327,6 +405,7 @@ function verifyClockMethod(method, location, req) {
   if (location.accuracyMeters > 100) {
     return {
       status: 422,
+
       error:
         'Location accuracy is too low. Try again outdoors or use another method.'
     };
@@ -346,6 +425,7 @@ function verifyClockMethod(method, location, req) {
   if (distance > allowedDistance) {
     return {
       status: 403,
+
       error:
         'Your location is outside the approved clocking area.'
     };
@@ -360,21 +440,28 @@ function attendanceRecord(row) {
   return {
     id: row.id,
     businessDate: row.business_date,
+
     clockInAt: row.clock_in_at,
     clockInMethod: row.clock_in_method,
+
     clockOutAt: row.clock_out_at,
     clockOutMethod: row.clock_out_method
   };
 }
 
 // --------------------------------------------------
-// Authentication and account safeguards
+// Authentication
 // --------------------------------------------------
 
-// Only return accounts that currently exist and are active.
 function getActiveEmployee(id) {
   return db.prepare(`
-    SELECT id, email, display_name, role, active
+    SELECT
+      id,
+      login_id,
+      email,
+      display_name,
+      role,
+      active
     FROM employees
     WHERE id = ? AND active = 1
   `).get(id);
@@ -402,8 +489,7 @@ function requireAuth(req, res, next) {
       }
     );
 
-    // Recheck the database on every authenticated request.
-    // A token alone must not bypass account deactivation.
+    // Check current account status on every request.
     const employee = getActiveEmployee(claims.sub);
 
     if (!employee) {
@@ -435,7 +521,7 @@ function requireAdmin(req, res, next) {
     });
   }
 
-  // Use the current database role, not only a token claim.
+  // Use the current database role.
   if (actor.role !== 'admin') {
     return res.status(403).json({
       error: 'Administrator access is required.'
@@ -450,6 +536,7 @@ function requireAdmin(req, res, next) {
 function publicUser(row) {
   return {
     id: row.id,
+    loginId: row.login_id,
     email: row.email,
     displayName: row.display_name,
     role: row.role,
@@ -469,7 +556,7 @@ app.get('/health', (_req, res) => {
 });
 
 // --------------------------------------------------
-// Authentication routes
+// Sign-in
 // --------------------------------------------------
 
 app.post('/v1/auth/login', loginLimiter, (req, res) => {
@@ -477,21 +564,31 @@ app.post('/v1/auth/login', loginLimiter, (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: 'Enter a valid email and password.'
+      error:
+        'Provide exactly one valid loginId or email, and a password of 1–200 characters.'
     });
   }
+
+  const byLoginId = parsed.data.loginId !== undefined;
 
   const employee = db.prepare(`
     SELECT
       id,
+      login_id,
       email,
       display_name,
       password_hash,
       role,
       active
     FROM employees
-    WHERE email = ?
-  `).get(parsed.data.email.toLowerCase());
+    WHERE ${byLoginId ? 'login_id' : 'email'} = ? COLLATE NOCASE
+  `).get(
+    normalizeLoginId(
+      byLoginId
+        ? parsed.data.loginId
+        : parsed.data.email
+    )
+  );
 
   if (
     !employee ||
@@ -502,7 +599,7 @@ app.post('/v1/auth/login', loginLimiter, (req, res) => {
     )
   ) {
     return res.status(401).json({
-      error: 'Email or password is incorrect.'
+      error: 'Login ID, email, or password is incorrect.'
     });
   }
 
@@ -524,8 +621,10 @@ app.post('/v1/auth/login', loginLimiter, (req, res) => {
     accessToken: token,
     tokenType: 'Bearer',
     expiresIn: 900,
+
     employee: {
       id: employee.id,
+      loginId: employee.login_id,
       email: employee.email,
       displayName: employee.display_name,
       role: employee.role
@@ -544,6 +643,7 @@ app.get('/v1/me', requireAuth, (req, res) => {
 
   return res.json({
     id: employee.id,
+    loginId: employee.login_id,
     email: employee.email,
     displayName: employee.display_name,
     role: employee.role
@@ -551,8 +651,7 @@ app.get('/v1/me', requireAuth, (req, res) => {
 });
 
 // --------------------------------------------------
-// Administrator user management
-// Never return password hashes or passwords.
+// Administrator: list users
 // --------------------------------------------------
 
 app.get(
@@ -563,6 +662,7 @@ app.get(
     const rows = db.prepare(`
       SELECT
         id,
+        login_id,
         email,
         display_name,
         role,
@@ -580,6 +680,10 @@ app.get(
   }
 );
 
+// --------------------------------------------------
+// Administrator: create employee login
+// --------------------------------------------------
+
 app.post(
   '/v1/admin/users',
   requireAuth,
@@ -590,12 +694,19 @@ app.post(
     if (!parsed.success) {
       return res.status(400).json({
         error:
-          'Enter a valid email, display name, and a password of at least 12 characters.'
+          'Enter a valid email, display name, password (at least 12 characters; at most 72 UTF-8 bytes), and optional loginId (3–50 letters, digits, dots, underscores or hyphens; start with a letter or digit).'
       });
     }
 
     const id = crypto.randomUUID();
+
     const email = parsed.data.email.toLowerCase();
+
+    // Fallback preserves compatibility with older clients.
+    const loginId = normalizeLoginId(
+      parsed.data.loginId ?? email
+    );
+
     const createdAt = new Date().toISOString();
 
     const passwordHash = bcrypt.hashSync(
@@ -607,6 +718,7 @@ app.post(
       db.prepare(`
         INSERT INTO employees (
           id,
+          login_id,
           email,
           display_name,
           password_hash,
@@ -614,9 +726,10 @@ app.post(
           active,
           created_at
         )
-        VALUES (?, ?, ?, ?, 'employee', 1, ?)
+        VALUES (?, ?, ?, ?, ?, 'employee', 1, ?)
       `).run(
         id,
+        loginId,
         email,
         parsed.data.displayName,
         passwordHash,
@@ -625,7 +738,8 @@ app.post(
     } catch (error) {
       if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return res.status(409).json({
-          error: 'A user with that email already exists.'
+          error:
+            'A user with that email or login ID already exists.'
         });
       }
 
@@ -642,6 +756,7 @@ app.post(
     const user = db.prepare(`
       SELECT
         id,
+        login_id,
         email,
         display_name,
         role,
@@ -656,6 +771,10 @@ app.post(
     });
   }
 );
+
+// --------------------------------------------------
+// Administrator: activate or deactivate users
+// --------------------------------------------------
 
 app.patch(
   '/v1/admin/users/:id/status',
@@ -723,6 +842,7 @@ app.patch(
     const updated = db.prepare(`
       SELECT
         id,
+        login_id,
         email,
         display_name,
         role,
@@ -739,7 +859,7 @@ app.patch(
 );
 
 // --------------------------------------------------
-// Clocking methods
+// Available clocking methods
 // --------------------------------------------------
 
 app.get(
@@ -751,18 +871,21 @@ app.get(
         {
           id: 'wifi',
           enabled: wifiCidrs.length > 0,
+
           note:
             'Verified by API peer network address; a web page cannot securely read Wi-Fi name.'
         },
         {
           id: 'location',
           enabled: geofence.latitude !== null,
+
           note:
             'Requires permission and server geofence; coordinates are checked but not stored.'
         },
         {
           id: 'face',
           enabled: false,
+
           note:
             'Unavailable pending reviewed provider, consent, retention, and accessible alternative.'
         }
@@ -772,7 +895,7 @@ app.get(
 );
 
 // --------------------------------------------------
-// Attendance
+// Today's attendance
 // --------------------------------------------------
 
 app.get(
@@ -795,7 +918,10 @@ app.get(
       SELECT *
       FROM attendance_days
       WHERE employee_id = ? AND business_date = ?
-    `).get(employee.id, date);
+    `).get(
+      employee.id,
+      date
+    );
 
     return res.json({
       businessDate: date,
@@ -804,6 +930,10 @@ app.get(
     });
   }
 );
+
+// --------------------------------------------------
+// Clock-in and clock-out
+// --------------------------------------------------
 
 function clock(action) {
   return (req, res) => {
@@ -846,13 +976,17 @@ function clock(action) {
         SELECT *
         FROM attendance_days
         WHERE employee_id = ? AND business_date = ?
-      `).get(employee.id, date);
+      `).get(
+        employee.id,
+        date
+      );
 
       if (action === 'in') {
         if (existing) {
           return {
             conflict:
               'A clock-in is already recorded for today.',
+
             row: existing
           };
         }
@@ -893,6 +1027,7 @@ function clock(action) {
         return {
           conflict:
             'Clock in before recording a clock-out.',
+
           row: null
         };
       }
@@ -901,13 +1036,16 @@ function clock(action) {
         return {
           conflict:
             'A clock-out is already recorded for today.',
+
           row: existing
         };
       }
 
       db.prepare(`
         UPDATE attendance_days
-        SET clock_out_at = ?, clock_out_method = ?
+        SET
+          clock_out_at = ?,
+          clock_out_method = ?
         WHERE id = ? AND clock_out_at IS NULL
       `).run(
         now,
@@ -969,7 +1107,7 @@ app.post(
 );
 
 // --------------------------------------------------
-// Error handler
+// Error handling
 // --------------------------------------------------
 
 app.use((error, _req, res, _next) => {
@@ -1002,7 +1140,7 @@ app.use((error, _req, res, _next) => {
 });
 
 // --------------------------------------------------
-// Start and shutdown
+// Start and graceful shutdown
 // --------------------------------------------------
 
 const server = app.listen(PORT, () => {
