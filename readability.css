@@ -1,0 +1,82 @@
+/* Slightly larger, easier-to-read type across the HRMS interface. */
+body {
+  font-size: 16px;
+}
+
+/* Raise small interface copy without changing headings or decorative icons. */
+.nav-item { font-size: 15px; }
+.brand small { font-size: 11px; }
+.nav-label,
+.eyebrow { font-size: 11px; }
+.prototype-note strong,
+.user-chip strong { font-size: 13px; }
+.prototype-note small,
+.user-chip small { font-size: 12px; }
+.breadcrumbs { font-size: 14px; }
+.today-label { font-size: 13px; }
+.subtitle { font-size: 14px; }
+.button { font-size: 13px; }
+.stat-top { font-size: 13px; }
+.stat-foot { font-size: 12px; }
+.panel-heading h2,
+.clock-info h2 { font-size: 15px; }
+.panel-heading p { font-size: 12px; }
+.text-button { font-size: 12px; }
+th { font-size: 10px; }
+td { font-size: 12px; }
+.person-cell strong { font-size: 12px; }
+.person-cell small { font-size: 11px; }
+.table-footer { font-size: 11px; }
+.quick-action strong { font-size: 12px; }
+.quick-action small { font-size: 11px; }
+.privacy-callout p { font-size: 11px; }
+.search-box input,
+.date-picker input { font-size: 12px; }
+.record-count { font-size: 12px; }
+.filter-chip { font-size: 11px; }
+.app-footer { font-size: 11px; }
+.empty-state { font-size: 13px; }
+
+/* Leave management uses its own stylesheet, so scale its supporting text too. */
+.leave-notice,
+.leave-kpi > span,
+.leave-section-heading p,
+:is(#view-leave, #view-leave-calendar) label,
+.leave-dialog label,
+.leave-balance-ratio,
+.leave-balance-details span,
+.leave-carry,
+.leave-policy,
+.leave-muted,
+.leave-table td,
+.leave-cell-small,
+.leave-status,
+:is(#view-leave, #view-leave-calendar) .table-footer,
+.leave-legend,
+.leave-weekday,
+.leave-calendar-day > time,
+.leave-feedback,
+.leave-error,
+.leave-preview,
+.leave-details-summary,
+.leave-details-summary p,
+.leave-history li,
+.leave-prewrap,
+.leave-inbox-item {
+  font-size: 14px;
+}
+
+.leave-table th { font-size: 11px; }
+.leave-table td strong { font-size: 14px; }
+.leave-cell-small,
+.leave-carry { font-size: 12px; }
+.leave-status,
+.leave-legend,
+.leave-calendar-day > time { font-size: 12px; }
+.leave-holiday,
+.leave-event { font-size: 12px; }
+.leave-view-tabs button { font-size: 14px; }
+
+@media (max-width: 700px) {
+  .page-heading h1 { font-size: 24px; }
+}
