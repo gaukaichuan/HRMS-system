@@ -1,0 +1,77 @@
+/* Copyable API reference in Settings. */
+.api-reference-icon {
+  color: #5e50cf !important;
+  background: #f0edff !important;
+  font-size: 19px !important;
+}
+
+.api-reference-section { max-width: 980px; }
+.api-reference-card {
+  max-width: 800px;
+  padding: 22px;
+  border: 1px solid #e7eaf2;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(37, 43, 59, .04);
+}
+.api-callout, .api-auth-note, .api-response-note {
+  display: grid;
+  gap: 5px;
+  padding: 13px 15px;
+  border: 1px solid #e4dfff;
+  border-radius: 10px;
+  background: #f7f5ff;
+  color: #626b81;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.api-callout strong, .api-auth-note strong, .api-response-note strong { color: #4a3eb0; }
+.api-base-field {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
+  color: #46516a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.api-base-control { display: flex; gap: 9px; }
+.api-base-control input {
+  min-width: 0;
+  min-height: 42px;
+  flex: 1;
+  border: 1px solid #dfe3ed;
+  border-radius: 8px;
+  padding: 0 11px;
+  color: #30394f;
+  background: #fff;
+  font: 13px 'DM Sans', sans-serif;
+}
+.api-base-control button { min-height: 42px; white-space: nowrap; }
+.api-base-field small { color: #788198; font-size: 11px; font-weight: 400; line-height: 1.5; }
+.api-auth-note { margin-bottom: 20px; border-color: #e7eaf2; background: #fafbfe; }
+.api-auth-note strong, .api-response-note strong { color: #30394f; }
+.api-auth-note code, .api-response-note code { padding: 1px 4px; border-radius: 4px; background: #eef0f6; font-size: .95em; }
+.api-endpoints h3 { margin: 0 0 10px; color: #30394f; font: 700 15px Manrope, sans-serif; }
+.api-endpoint { padding: 14px 0; border-top: 1px solid #edf0f5; }
+.api-endpoint-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.api-endpoint-heading > code { color: #30394f; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.api-method { padding: 4px 7px; border-radius: 5px; font-size: 9px; font-weight: 800; letter-spacing: .5px; }
+.api-method.get { color: #21744f; background: #e7f6ef; }
+.api-method.post { color: #5443bf; background: #eeeaff; }
+.api-access { margin-left: auto; color: #788198; font-size: 10px; }
+.api-access.public { color: #21744f; }
+.api-endpoint p { margin: 7px 0; color: #788198; font-size: 11px; line-height: 1.5; }
+.api-endpoint p.api-or { margin-bottom: 5px; }
+.api-endpoint pre { overflow-x: auto; margin: 8px 0; padding: 11px 12px; border: 1px solid #e9ebf2; border-radius: 8px; background: #f8f9fc; color: #3f4960; font: 11px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.api-copy { margin-top: 4px; padding: 7px 10px; border: 1px solid #e1e4ed; border-radius: 7px; background: #fff; color: #5547c4; font-size: 11px; font-weight: 700; cursor: pointer; }
+.api-copy:hover { border-color: #c9c1ff; background: #faf9ff; }
+.api-response-note { margin-top: 14px; border-color: #e7eaf2; background: #fafbfe; }
+.api-copy-status { min-height: 18px; margin: 10px 0 0; color: #247b5d; font-size: 12px; }
+.api-copy-status.is-error { color: #ad4350; }
+.api-reference-section [data-api-back] { width: fit-content; }
+
+@media (max-width: 600px) {
+  .api-reference-card { padding: 16px; }
+  .api-base-control { align-items: stretch; flex-direction: column; }
+  .api-base-control button { width: 100%; }
+  .api-access { width: 100%; margin-left: 0; }
+}
