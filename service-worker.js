@@ -1,11 +1,13 @@
 (() => {
   'use strict';
-  const CACHE_NAME = 'peopledesk-mobile-clock-v2';
+  const CACHE_NAME = 'peopledesk-mobile-clock-v3';
   const APP_FILES = [
     './clock.html',
     './clock.css',
     './clock-menu.css',
+    './clock-device-status.css',
     './clock.js',
+    './clock-device-status.js',
     './manifest.webmanifest',
     './clock-icon.svg'
   ];
@@ -33,9 +35,6 @@
     const request = event.request;
     const url = new URL(request.url);
     if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-
-    // Cache the app shell only. Demo attendance and requests are not queued or
-    // reported as server-synced when offline.
     event.respondWith(
       fetch(request).catch(() => caches.match(request).then((cached) => cached || Response.error()))
     );

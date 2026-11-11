@@ -1,0 +1,30 @@
+/* Attendance device status panel. Browser network info cannot identify Wi-Fi. */
+.device-status-card {
+  margin-top: 20px;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(37, 43, 59, .035);
+}
+.device-status-heading { margin-bottom: 13px; }
+.device-status-heading h2 { font: 700 15px Manrope, sans-serif; margin: 0; }
+.device-status-row { display: flex; align-items: center; gap: 10px; min-height: 53px; }
+.device-status-icon { display: grid; width: 35px; height: 35px; flex: none; place-items: center; border-radius: 11px; font-size: 19px; }
+.device-status-copy { min-width: 0; flex: 1; }
+.device-status-copy strong, .device-status-copy small { display: block; }
+.device-status-copy strong { color: var(--ink); font-size: 12px; }
+.device-status-copy small { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.device-indicator { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #c7ccd7; }
+.device-indicator.is-ready { background: #2b9a72; box-shadow: 0 0 0 4px #e6f6ef; }
+.device-indicator.is-unavailable { background: #d26469; box-shadow: 0 0 0 4px #fff0f0; }
+.device-indicator.is-checking { background: #d5a047; box-shadow: 0 0 0 4px #fff6e5; animation: device-pulse 1s infinite alternate; }
+@keyframes device-pulse { to { opacity: .45; } }
+.location-check { width: 100%; min-height: 40px; margin: 9px 0 11px; padding: 0 12px; border: 1px solid #dfe3ed; border-radius: 9px; background: #fff; color: #5547c4; font-size: 12px; font-weight: 700; cursor: pointer; }
+.location-check:hover:not(:disabled) { border-color: #cfc8ff; background: #faf9ff; }
+.location-check:disabled { opacity: .65; cursor: progress; }
+.network-status-row { padding-top: 9px; border-top: 1px solid #edf0f5; }
+.network-icon { color: #5476cb; background: #edf2ff; }
+.wifi-limitation { margin: 10px 0 0; padding: 10px 11px; border-radius: 9px; background: #f8f9fc; color: #788198; font-size: 10px; line-height: 1.5; }
+.device-check-message { min-height: 17px; margin: 8px 0 0; color: #59647c; font-size: 11px; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .device-indicator.is-checking { animation: none; } }
