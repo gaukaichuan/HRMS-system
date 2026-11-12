@@ -1562,9 +1562,38 @@ function setupEmployeeDialog() {
       employee?.emergencyContactRelationship ?? ''
     );
 
+    // Sign-in details: a ne employee gets a temporary password
+    // that can be edited; whenediting, a blank field keeps the 
+    // current password. 
+
+    $('#employee-id-display').value = 
+      employee?.id ?? nextEmployeeId();
+
+    if(employee){
+      $('#employee-password).value = '';
+      $('#employee-password').placeholder = 
+        'Leave blank to keep the current password';
+      $('#employee-password-hint').textContext = 
+        'Type a new password (12-18 characters) to change it' + 
+        'or press Generate for a random one.';
+    }else{
+      $('#employee-password').value = 
+        generateTemporaryPassword();
+
+      $('#employee-password').placeholder = '';
+
+      $('#employee-password-hint').textContext = 
+        'A temporary password was generated automatically.'
+        'You can change it now or later by editing the employee.'
+    }
+
     dialog.showModal();
     $('#employee-first-name').focus();
   };
+
+  $('#generate-passsword').addEventListener('click', () => {
+    $('#employee-password').value = generateTemporaryPassword();
+  });
 
   $('#add-employee').addEventListener(
     'click',
