@@ -1453,6 +1453,18 @@ function nextEmployeeId() {
   return `EMP-${String(highest + 1).padStart(4, '0')}`;
 }
 
+function generateTemporaryPassword() {
+  const characters =
+    'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$!';
+
+  const values = new Uint32Array(16);
+  crypto.getRandomValues(values);
+
+  return Array.from(values, value =>
+    characters[value % characters.length]
+  ).join('');
+}
+
 function setupEmployeeDialog() {
   const dialog = buildEmployeeDialog();
   const form = $('#employee-form');
