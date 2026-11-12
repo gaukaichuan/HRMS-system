@@ -1142,3 +1142,43 @@ td,
     gap: 6px;
   }
 }
+
+/* Employee tab: generated password cell */
+.credential-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.credential-value {
+  min-width: 118px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: .3px;
+}
+
+/* Employee dialog: password field with Generate button */
+.password-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.password-input-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+#employee-password-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8a8fa3;
+  line-height: 1.5;
+}
+
+#employee-id-display {
+  background: #f5f6fa;
+  color: #55596a;
+}
