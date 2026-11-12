@@ -555,15 +555,16 @@ function navigate(viewName) {
     );
   });
 
-  const title = {
-    dashboard: 'Dashboard',
-    employees: 'Employees',
-    attendance: 'Attendance',
-    leave: 'Leave management',
-    'leave-calendar': 'Leave calendar',
-    clock: 'Clock in / out',
-    settings: 'Settings'
-  }[viewName];
+ const title = {
+  dashboard: 'Dashboard',
+  employees: 'Employees',
+  attendance: 'Attendance',
+  leave: 'Leave management',
+  'leave-calendar': 'Leave calendar',
+  clock: 'Clock in / out',
+  settings: 'Settings',
+  'user-management': 'User Management'
+}[viewName];
 
   $('#breadcrumb-current').textContent = title;
 }
