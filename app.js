@@ -455,6 +455,45 @@ function renderEmployees(
 
           <td>${personCell(employee)}</td>
           <td>${escapeHtml(employee.id)}</td>
+
+          <td>
+            <div class="credential-cell>
+              <code class="credential-value">${
+                revealedPasswordIds.has(employee.id)
+                  ? escapeHtml(employee.password)
+                  : '••••••••••••'
+              }</code>
+
+              <button
+                type="button"
+                class="row-action"
+                data-action="toggle-password"
+                data-employee-id="${escapeHtml(employee.id)}"
+                aria-label="${
+                  revealedPasswordIds.has(employee.id)
+                    ? 'Hide'
+                    : 'Show'
+                } password for ${escapeHtml(employee.name0}"
+              >
+                ${
+                  revealedPasswordIds.has(employee.id)
+                    ? 'Hide'
+                    : 'Show'
+                }
+              </button>
+
+              <button
+                type="button"
+                class="row-action"
+                data-action="copy-password"
+                data-employee-id="${escapeHtml(employee.id)}"
+                aria-label="Copy password for ${escapeHtml(employee.name)}"
+              >
+                Copy
+              </button>
+            </div>
+          </td>
+          
           <td>${escapeHtml(employee.department)}</td>
           <td>${escapeHtml(employee.role)}</td>
           <td>${escapeHtml(employee.employmentType || '—')}</td>
@@ -1363,6 +1402,45 @@ function buildEmployeeDialog() {
             <option>Inactive</option>
           </select>
         </div>
+
+       <div class="employee-form-section">
+         <h3>Clock-in sign-in</h3>
+       </div>
+
+       <div class="employee-form-field full">
+         <label for="employee-id-display">Employee ID</label>
+       <Input
+         id='employee-id-display"
+         readonly
+         tabindex="-1"
+       >
+      </div>
+
+      <div class="employee-form-field full">
+        <label for="employee-password">Password</label>
+
+        <div class="password-input-row>
+          <input
+            id="employee-password"
+            name="password"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="72" 
+          >
+
+          <button
+            class="button button-secondary"
+            id="generate-password"
+            type="button"
+          >
+
+            Generate
+          </button>
+        </div>
+
+        <small id="employee-password-hint"></small>
+      </div>
 
         <div class="employee-form-section">
           <h3>Emergency contact</h3>
