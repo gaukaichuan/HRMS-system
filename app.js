@@ -1627,6 +1627,28 @@ function setupEmployeeDialog() {
       return;
     }
 
+    // Password: blank keeps the current one (or generates one for a
+    // new employee). Matches the backend rule: 12+ characters, at most
+    // 72 UTF-8 bytes.
+    const typedPassword = String(values.get('password') ?? '');
+
+    if (
+      typedPassword &&
+      (
+        typedPassword.length < 12 ||
+        new TextEncoder().encode(typedPassword).length > 72
+      )
+    ) {
+      error.textContent =
+        'Password must be at least 12 characters and at most ' +
+        '72 bytes. Press Generate for a random one.';
+
+      error.hidden = false;
+      $('#employee-password').focus();
+
+      return;
+    }
+
     const updated = {
       ...(target ?? {}),
 
@@ -1637,6 +1659,13 @@ function setupEmployeeDialog() {
       ).toUpperCase(),
 
       id: target?.id ?? nextEmployeeId(),
+
+      // Temporary password is generated when the employee is created;
+      // it only changes when a new one is typed or generated.
+      password:
+        typedPassword ||
+        target?.password ||
+        generateTemporaryPassword(),
 
       department: String(values.get('department')),
 
@@ -1803,8 +1832,38 @@ function setupEmployeeActions(employeeDialog) {
       toggleEmployeeStatus(button.dataset.employeeId);
     }
 
-    if (button.dataset.action === 'delete') {
+       if (button.dataset.action === 'delete') {
       deleteEmployees([button.dataset.employeeId]);
+    }
+
+    if (
+      button.dataset.action === 'toggle-password' &&
+      employee
+    ) {
+      if (revealedPasswordIds.has(employee.id)) {
+        revealedPasswordIds.delete(employee.id);
+      } else {
+        revealedPasswordIds.add(employee.id);
+      }
+
+      renderEmployees();
+    }
+
+    if (
+      button.dataset.action === 'copy-password' &&
+      employee?.password
+    ) {
+      const original = button.textContent;
+
+      navigator.clipboard
+        .writeText(employee.password)
+        .then(() => { button.textContent = 'Copied'; })
+        .catch(() => { button.textContent = 'Failed'; })
+        .finally(() => {
+          setTimeout(() => {
+            button.textContent = original;
+          }, 1500);
+        });
     }
   });
 
