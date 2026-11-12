@@ -562,8 +562,7 @@ function navigate(viewName) {
   leave: 'Leave management',
   'leave-calendar': 'Leave calendar',
   clock: 'Clock in / out',
-  settings: 'Settings',
-  'user-management': 'User Management'
+   settings: 'Settings'
 }[viewName];
 
   $('#breadcrumb-current').textContent = title;
