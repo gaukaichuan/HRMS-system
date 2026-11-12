@@ -354,6 +354,23 @@ function loadEmployees() {
 
 const employees = loadEmployees();
 
+// Employees created before passwords existed (including the
+// sample records ) receive a generated password once, then keep it.
+const revealedPasswordIds = new Set ();
+
+(function backfillEmployeePasswords() {
+  let changed = false;
+
+  employees.forEach((employee) => {
+    if(!employee.password){
+      employee.password = generateTemporaryPassword();
+      changed = true;
+    }
+  });
+
+  if (changed) persistEmployeeState();
+})();
+
 const initialsAvatar = (employee) => (
   `<span class="person-avatar ${escapeHtml(employee.color)}">` +
   `${escapeHtml(employee.initials)}</span>`
@@ -422,6 +439,7 @@ function renderEmployees(
     }
     <th>EMPLOYEE</th>
     <th>EMPLOYEE ID</th>
+    <th>PASSWORD</th>
     <th>DEPARTMENT</th>
     <th>JOB TITLE</th>
     <th>EMPLOYMENT TYPE</th>
