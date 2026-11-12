@@ -1,313 +1,738 @@
+
 (() => {
   'use strict';
 
-  const settings = document.querySelector('#view-settings');
-  const home = document.querySelector('#master-data-home');
+  const nav = document.querySelector('.sidebar nav');
+  const main = document.querySelector('.main-content');
 
-  if (
-    !settings ||
-    !home ||
-    document.querySelector('#master-section-users')
-  ) {
+  if (!nav || !main || document.querySelector('#view-user-management')) {
     return;
   }
 
+  // Add User Management to the main sidebar
+  const navItem = document.createElement('button');
+  navItem.className = 'nav-item';
+  navItem.dataset.view = 'user-management';
+  navItem.innerHTML = '<span aria-hidden="true">♙</span> User Management';
+  nav.append(navItem);
+
+  // Create the User Management page
+  const view = document.createElement('section');
+  view.className = 'view';
+  view.id = 'view-user-management';
+
+  view.innerHTML = `
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">ADMINISTRATION</p>
+        <h1>User Management</h1>
+        <p class="subtitle">
+          Create employee sign-in accounts and manage existing users.
+        </p>
+      </div>
+    </div>
+
+    <p id="um-feedback" class="um-feedback"
+       role="status" aria-live="polite"></p>
+
+    <section class="panel um-login" id="um-login-panel">
+      <div class="um-card-heading">
+        <div>
+          <h2>Administrator sign-in</h2>
+          <p>Sign in with your HRMS administrator account to manage users.</p>
+        </div>
+      </div>
+
+      <form id="um-login-form" class="um-form">
+        <label>
+          Administrator email
+          <input name="email" type="email"
+                 autocomplete="username" maxlength="254" required>
+        </label>
+
+        <label>
+          Password
+          <input name="password" type="password"
+                 autocomplete="current-password" maxlength="200" required>
+        </label>
+
+        <button class="button button-primary" type="submit">
+          Sign in
+        </button>
+      </form>
+
+      <p class="um-hint">
+        API: <span id="um-api-address"></span>
+      </p>
+    </section>
+
+    <div id="um-manager" hidden>
+      <div class="um-session">
+        <span id="um-signed-in"></span>
+        <button class="button button-secondary"
+                id="um-signout" type="button">
+          Sign out
+        </button>
+      </div>
+
+      <div class="um-layout">
+
+        <!-- CREATE USER -->
+        <section class="panel um-card">
+          <div class="um-card-heading">
+            <div>
+              <h2>Create User</h2>
+              <p>Add a new employee account.</p>
+            </div>
+            <span class="um-icon">＋</span>
+          </div>
+
+          <form id="um-create-form" class="um-form">
+
+            <label>
+              User ID
+              <input name="loginId" autocomplete="off"
+                     minlength="3" maxlength="50"
+                     pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{2,49}"
+                     required>
+            </label>
+
+            <small>
+              3–50 characters: letters, numbers, dots,
+              underscores or hyphens.
+            </small>
+
+            <label>
+              Full name
+              <input name="displayName" autocomplete="name"
+                     maxlength="120" required>
+            </label>
+
+            <label>
+              Email address
+              <input name="email" type="email"
+                     autocomplete="off" maxlength="254" required>
+            </label>
+
+            <label>
+              Initial password
+              <input name="password" type="password"
+                     autocomplete="new-password"
+                     minlength="12" maxlength="72" required>
+            </label>
+
+            <small>
+              Password must contain at least 12 characters.
+              Passwords are never displayed in the user list.
+            </small>
+
+            <button class="button button-primary" type="submit">
+              Create user
+            </button>
+
+          </form>
+        </section>
+
+        <!-- USER LIST -->
+        <section class="panel um-card um-list-card">
+
+          <div class="um-card-heading">
+            <div>
+              <h2>User List</h2>
+              <p id="um-count">Loading users…</p>
+            </div>
+
+            <button class="button button-secondary"
+                    id="um-refresh" type="button">
+              ↻ Refresh
+            </button>
+          </div>
+
+          <div class="um-list-toolbar">
+            <input id="um-search" type="search"
+                   placeholder="Search by user ID, name or email"
+                   aria-label="Search users">
+
+            <select id="um-status-filter"
+                    aria-label="Filter by status">
+              <option value="all">All accounts</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="um-table-wrap">
+            <table class="um-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>User ID</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody id="um-users-body">
+                <tr>
+                  <td colspan="6" class="um-empty">
+                    Sign in to view users.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+      </div>
+    </div>
+  `;
+
+  // Insert the new page after Clock
+  const clock = document.querySelector('#view-clock');
+
+  if (clock) {
+    clock.insertAdjacentElement('afterend', view);
+  } else {
+    main.append(view);
+  }
+
+  // Page styling
   const style = document.createElement('style');
 
   style.textContent = `
-    #master-section-users[hidden],
-    #view-users [hidden] {
-      display: none !important;
+    #view-user-management .um-feedback {
+      min-height: 20px;
+      margin: 0 0 12px;
+      color: #218c68;
+      font-size: 12px;
     }
 
-    #master-section-users {
-      margin-top: 24px;
+    #view-user-management .um-feedback[data-error="true"] {
+      color: #a12232;
     }
 
-    #view-users {
-      margin-top: 22px;
+    #view-user-management .um-login {
+      max-width: 480px;
+      padding: 22px;
     }
 
-    #view-users h2 {
-      margin: 0;
-      font: 700 18px Manrope, sans-serif;
-    }
-
-    #view-users h3 {
-      margin: 0;
-      font: 700 15px Manrope, sans-serif;
-    }
-
-    #view-users .user-control-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin: 22px 0 16px;
-    }
-
-    #view-users .user-control-heading p,
-    #view-users .user-control-card > p,
-    #view-users .user-control-note {
-      color: #777b8d;
-      line-height: 1.6;
-    }
-
-    #view-users .user-control-heading p {
-      margin: 6px 0 0;
-    }
-
-    #view-users .user-control-notice {
-      padding: 14px 16px;
-      margin: 0 0 18px;
-      border: 1px solid #eeecff;
-      border-radius: 9px;
-      background: #f7f6ff;
-      color: #5549b7;
-      line-height: 1.6;
-    }
-
-    #view-users .user-control-grid {
+    #view-user-management .um-layout {
       display: grid;
-      grid-template-columns: minmax(260px, 380px) minmax(0, 1fr);
+      grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
       gap: 16px;
       align-items: start;
     }
 
-    #view-users .user-control-card {
-      min-width: 0;
+    #view-user-management .um-card {
       padding: 20px;
-      border: 1px solid #eceef3;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 6px 24px rgba(34, 40, 70, .045);
+      min-width: 0;
     }
 
-    #view-users .user-control-card > p {
-      margin: 7px 0 18px;
-      font-size: 12px;
+    #view-user-management .um-card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
     }
 
-    #view-users .user-control-form,
-    #view-users .user-control-form label {
+    #view-user-management .um-card-heading h2 {
+      font: 700 16px Manrope;
+      margin: 0;
+    }
+
+    #view-user-management .um-card-heading p {
+      font-size: 11px;
+      color: #9295a3;
+      margin: 6px 0 0;
+    }
+
+    #view-user-management .um-icon {
       display: grid;
-      gap: 8px;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #f1efff;
+      color: #6857e8;
+      font-size: 20px;
     }
 
-    #view-users .user-control-form {
-      gap: 15px;
+    #view-user-management .um-form {
+      display: grid;
+      gap: 12px;
     }
 
-    #view-users .user-control-form label {
-      color: #4d5061;
-      font-size: 12px;
+    #view-user-management .um-form label {
+      display: grid;
+      gap: 6px;
+      font-size: 11px;
       font-weight: 600;
+      color: #55596a;
     }
 
-    #view-users .user-control-form input,
-    #view-users .user-control-form select {
+    #view-user-management .um-form input,
+    #view-user-management .um-list-toolbar input,
+    #view-user-management .um-list-toolbar select {
       width: 100%;
-      min-height: 40px;
+      min-height: 38px;
       padding: 9px 11px;
       border: 1px solid #dfe2eb;
       border-radius: 7px;
       background: #fff;
       color: #343848;
-      font: inherit;
+      font: 12px 'DM Sans', sans-serif;
     }
 
-    #view-users .user-control-form input:focus-visible,
-    #view-users .user-control-form select:focus-visible,
-    #view-users button:focus-visible {
-      outline: 3px solid #8170dc;
-      outline-offset: 2px;
+    #view-user-management .um-form small {
+      font-size: 10px;
+      color: #9295a3;
+      line-height: 1.5;
+      margin-top: -7px;
     }
 
-    #view-users .user-control-form button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    #view-users .user-control-note {
-      margin: 13px 0 0;
-      font-size: 11px;
-    }
-
-    #view-users .user-control-empty {
-      padding: 32px 16px;
-      color: #777b8d;
-      text-align: center;
-      line-height: 1.6;
-    }
-
-    #view-users .user-control-table-wrap {
-      overflow-x: auto;
-      margin-top: 14px;
-    }
-
-    #view-users .user-control-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    #view-users .user-control-table th,
-    #view-users .user-control-table td {
-      padding: 12px 10px;
-      border-bottom: 1px solid #edf0f5;
-      text-align: left;
-    }
-
-    #view-users .user-control-table th {
-      background: #f8f9fc;
-      color: #777b8d;
-      font-size: 11px;
-    }
-
-    #view-users .user-control-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
-      margin: 16px 0;
-    }
-
-    #view-users .user-control-toolbar input {
-      min-width: 180px;
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #dfe2eb;
-      border-radius: 7px;
-    }
-
-    #view-users .user-control-status {
-      min-height: 1.5em;
-      line-height: 1.6;
-    }
-
-    #view-users .user-control-status[data-error="true"] {
-      color: #a12232;
-    }
-
-    #view-users .user-control-table td {
-      font-size: 12px;
+    #view-user-management .um-hint {
+      font-size: 10px;
+      color: #9295a3;
+      margin: 16px 0 0;
       overflow-wrap: anywhere;
     }
 
-    #view-users .user-control-table button {
+    #view-user-management .um-session {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 0 14px;
+      font-size: 11px;
+      color: #777b8d;
+    }
+
+    #view-user-management .um-list-toolbar {
+      display: flex;
+      gap: 9px;
+      margin: 0 0 14px;
+    }
+
+    #view-user-management .um-list-toolbar input {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    #view-user-management .um-list-toolbar select {
+      width: auto;
+      min-width: 125px;
+    }
+
+    #view-user-management .um-table-wrap {
+      overflow-x: auto;
+    }
+
+    #view-user-management .um-table {
+      width: 100%;
+      border-collapse: collapse;
       white-space: nowrap;
     }
 
-    #view-users .user-control-badge {
+    #view-user-management .um-table th {
+      background: #fafbfc;
+      color: #9295a3;
+      font-size: 9px;
+      letter-spacing: .5px;
+      padding: 11px;
+      text-align: left;
+    }
+
+    #view-user-management .um-table td {
+      padding: 12px 11px;
+      border-top: 1px solid #f1f2f6;
+      font-size: 11px;
+      color: #676b7c;
+    }
+
+    #view-user-management .um-table td:first-child {
+      color: #444858;
+      font-weight: 600;
+    }
+
+    #view-user-management .um-status {
       display: inline-block;
       padding: 4px 8px;
       border-radius: 20px;
-      background: #eef7f1;
-      color: #216942;
+      background: #e9f7f1;
+      color: #248963;
+      font-size: 9px;
+      font-weight: 700;
     }
 
-    #view-users .user-control-badge[data-active="false"] {
-      background: #f2f2f5;
-      color: #656575;
+    #view-user-management .um-status.inactive {
+      background: #f0f1f4;
+      color: #777b8a;
     }
 
-    #view-users button:disabled {
-      opacity: .6;
+    #view-user-management .um-action {
+      border: 1px solid #eceef3;
+      background: #fff;
+      border-radius: 6px;
+      padding: 6px 9px;
+      color: #55596a;
+      font: 600 10px 'DM Sans';
+      cursor: pointer;
+    }
+
+    #view-user-management .um-action:disabled {
+      opacity: .45;
       cursor: not-allowed;
     }
 
-    @media (max-width: 900px) {
-      #view-users .user-control-grid {
-        grid-template-columns: minmax(0, 1fr);
+    #view-user-management .um-empty {
+      text-align: center !important;
+      padding: 28px !important;
+      color: #9295a3 !important;
+      font-weight: 400 !important;
+    }
+
+    @media(max-width: 1000px) {
+      #view-user-management .um-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media(max-width: 600px) {
+      #view-user-management .um-list-toolbar {
+        flex-direction: column;
+      }
+
+      #view-user-management .um-list-toolbar select {
+        width: 100%;
       }
     }
   `;
 
   document.head.append(style);
 
-  const tile = document.createElement('button');
-  tile.type = 'button';
-  tile.className = 'master-data-tile';
-  tile.dataset.openUsers = 'true';
-  tile.innerHTML = `
-    <span class="master-data-icon department-icon" aria-hidden="true">♙</span>
-    <span class="master-data-tile-copy">
-      <strong>Users</strong>
-      <small>Create and manage employee clock-in/out accounts.</small>
-    </span>
-    <span class="master-data-arrow" aria-hidden="true">→</span>
-  `;
-  home.append(tile);
+  // API configuration
+  const $ = (selector) => view.querySelector(selector);
 
-  const section = document.createElement('section');
-  section.id = 'master-section-users';
-  section.className = 'master-data-section';
-  section.hidden = true;
-  section.setAttribute('aria-labelledby', 'users-title');
-  section.innerHTML = `
-    <div id="view-users">
-      <button type="button" class="button button-secondary" data-users-back>← Settings</button>
-      <div class="user-control-heading">
-        <div>
-          <h2 id="users-title">Users</h2>
-          <p>Create and manage the accounts used to sign in to the employee clock screen.</p>
-        </div>
-      </div>
-      <p class="user-control-notice">
-        Create an employee User ID and password here, then use those same details on
-        <a href="clock.html">the clock-in / clock-out screen</a>.
-        Administrator sign-in protects this account list. It does not protect the rest of the HRMS workspace.
-      </p>
-      <p id="users-feedback" class="user-control-status" role="status" aria-live="polite"></p>
-      <section class="user-control-card" id="users-login-panel" aria-labelledby="users-login-title" style="max-width: 440px">
-        <h3 id="users-login-title">Administrator sign-in</h3>
-        <p>Use the administrator created with the backend bootstrap command.</p>
-        <form id="users-login-form" class="user-control-form">
-          <label>Administrator email
-            <input name="email" type="email" autocomplete="username" maxlength="254" required>
-          </label>
-          <label>Password
-            <input name="password" type="password" autocomplete="current-password" maxlength="200" required>
-          </label>
-          <button class="button button-primary" type="submit">Sign in</button>
-        </form>
-        <p class="user-control-note">API: <span id="users-api-address"></span>.
-          Set the trusted backend address in hrms-config.js; both pages use this configuration.
-          Your session stays in memory only. Reloading requires sign-in again.</p>
-      </section>
-      <div id="users-manager" hidden>
-        <div class="user-control-toolbar">
-          <span id="users-signed-in"></span>
-          <button type="button" class="button button-secondary" id="users-signout">Sign out</button>
-        </div>
-        <div class="user-control-grid">
-          <section class="user-control-card" aria-labelledby="user-create-title">
-            <h3 id="user-create-title">Create a new user</h3>
-            <p>New accounts are active employees, ready to sign in to clock in and clock out.</p>
-            <form id="users-create-form" class="user-control-form">
-              <label>User ID
-                <input name="loginId" autocomplete="off" minlength="3" maxlength="50"
-                  pattern="[a-zA-Z0-9][a-zA-Z0-9._\\-]{2,49}" required aria-describedby="users-login-id-help">
-              </label>
-              <small id="users-login-id-help">3–50 letters, digits, dots, underscores or hyphens; start with a letter or digit.</small>
-              <label>Full name
-                <input name="displayName" autocomplete="name" maxlength="120" required>
-              </label>
-              <label>Email address
-                <input name="email" type="email" autocomplete="off" maxlength="254" required>
-              </label>
-              <label>Initial password
-                <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="72"
-                  required aria-describedby="users-password-help">
-              </label>
-              <small id="users-password-help">At least 12 characters, at most 72 UTF-8 bytes. Passwords are never shown in the list.</small>
-              <p class="user-control-note">Role: Employee. Administrator creation remains a backend-only operation.</p>
-              <button class="button button-primary" type="submit">Create user</button>
-            </form>
-          </section>
-          <section class="user-control-card" aria-labelledby="user-list-title">
-            <h3 id="user-list-title">Created users</h3>
-            <p id="users-count"></p>
-            <div class="user-control-toolbar">
-              <label for="users-search">Search users</label>
-              <input id="users-search" type="search" placeholder="User ID, name or email">
-              <button type="button" class="button
+  const apiBase = String(
+    window.HRMS_CONFIG?.apiBaseUrl || ''
+  ).replace(/\/$/, '');
+
+  $('#um-api-address').textContent = apiBase || 'Not configured';
+
+  let token = '';
+  let currentAdmin = null;
+  let users = [];
+
+  // Display success and error messages
+  function feedback(message, error = false) {
+    const node = $('#um-feedback');
+
+    node.textContent = message;
+    node.dataset.error = error ? 'true' : 'false';
+  }
+
+  // API request helper
+  async function request(path, options = {}) {
+    if (!apiBase) {
+      throw new Error(
+        'Backend address is missing. Configure apiBaseUrl in hrms-config.js.'
+      );
+    }
+
+    const response = await fetch(`${apiBase}${path}`, {
+      ...options,
+
+      headers: {
+        ...(options.body
+          ? { 'Content-Type': 'application/json' }
+          : {}),
+
+        ...(token
+          ? { Authorization: `Bearer ${token}` }
+          : {}),
+
+        ...options.headers
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || `Request failed (${response.status}).`
+      );
+    }
+
+    return data;
+  }
+
+  // Display users in the table
+  function renderUsers() {
+    const query = $('#um-search').value.trim().toLowerCase();
+    const status = $('#um-status-filter').value;
+
+    const filtered = users.filter((user) => {
+      const matches = `
+        ${user.loginId}
+        ${user.displayName}
+        ${user.email}
+      `.toLowerCase().includes(query);
+
+      return matches &&
+        (
+          status === 'all' ||
+          (status === 'active' ? user.active : !user.active)
+        );
+    });
+
+    $('#um-count').textContent =
+      `${filtered.length} of ${users.length} user${users.length === 1 ? '' : 's'}`;
+
+    $('#um-users-body').innerHTML = filtered.length
+      ? filtered.map((user) => {
+          const created = user.createdAt
+            ? new Date(user.createdAt).toLocaleDateString()
+            : '—';
+
+          const safe = (value) =>
+            String(value ?? '').replace(/[&<>"']/g, (char) => ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;'
+            }[char]));
+
+          return `
+            <tr>
+              <td>
+                ${safe(user.displayName)}
+                <br>
+                <small>${safe(user.email)}</small>
+              </td>
+
+              <td>${safe(user.loginId)}</td>
+              <td>${safe(user.role)}</td>
+
+              <td>
+                <span class="um-status ${user.active ? '' : 'inactive'}">
+                  ${user.active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+
+              <td>${safe(created)}</td>
+
+              <td>
+                <button
+                  class="um-action"
+                  type="button"
+                  data-toggle-user="${safe(user.id)}"
+                  data-next-active="${!user.active}">
+                  ${user.active ? 'Deactivate' : 'Activate'}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('')
+      : `
+        <tr>
+          <td colspan="6" class="um-empty">
+            No users match your search.
+          </td>
+        </tr>
+      `;
+  }
+
+  // Retrieve users from backend
+  async function loadUsers() {
+    const result = await request('/v1/admin/users');
+
+    users = Array.isArray(result.users)
+      ? result.users
+      : [];
+
+    renderUsers();
+  }
+
+  // Administrator login
+  $('#um-login-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+
+    button.disabled = true;
+    feedback('Signing in…');
+
+    try {
+      const result = await request('/v1/auth/login', {
+        method: 'POST',
+
+        body: JSON.stringify({
+          email: form.elements.email.value.trim(),
+          password: form.elements.password.value
+        })
+      });
+
+      if (result.employee?.role !== 'admin') {
+        throw new Error(
+          'This page requires an administrator account.'
+        );
+      }
+
+      token = result.accessToken;
+      currentAdmin = result.employee;
+
+      $('#um-login-panel').hidden = true;
+      $('#um-manager').hidden = false;
+
+      $('#um-signed-in').textContent =
+        `Signed in as ${currentAdmin.displayName} (${currentAdmin.email})`;
+
+      form.reset();
+
+      await loadUsers();
+
+      feedback('');
+
+    } catch (error) {
+      token = '';
+      feedback(error.message, true);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // Create new employee user
+  $('#um-create-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+
+    const payload = Object.fromEntries(
+      new FormData(form).entries()
+    );
+
+    button.disabled = true;
+    feedback('Creating user…');
+
+    try {
+      await request('/v1/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      form.reset();
+
+      await loadUsers();
+
+      feedback('User created successfully.');
+
+    } catch (error) {
+      feedback(error.message, true);
+
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // Activate or deactivate a user
+  $('#um-users-body').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-toggle-user]');
+
+    if (!button) return;
+
+    const id = button.dataset.toggleUser;
+    const active = button.dataset.nextActive === 'true';
+
+    if (!window.confirm(
+      `${active ? 'Activate' : 'Deactivate'} this user account?`
+    )) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await request(
+        `/v1/admin/users/${encodeURIComponent(id)}/status`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ active })
+        }
+      );
+
+      await loadUsers();
+
+      feedback(`User ${active ? 'activated' : 'deactivated'}.`);
+
+    } catch (error) {
+      feedback(error.message, true);
+      button.disabled = false;
+    }
+  });
+
+  // Search users
+  $('#um-search').addEventListener('input', renderUsers);
+
+  // Filter account status
+  $('#um-status-filter').addEventListener('change', renderUsers);
+
+  // Refresh user list
+  $('#um-refresh').addEventListener('click', async () => {
+    try {
+      await loadUsers();
+      feedback('User list refreshed.');
+
+    } catch (error) {
+      feedback(error.message, true);
+    }
+  });
+
+  // Administrator logout
+  $('#um-signout').addEventListener('click', () => {
+    token = '';
+    currentAdmin = null;
+    users = [];
+
+    $('#um-manager').hidden = true;
+    $('#um-login-panel').hidden = false;
+
+    $('#um-users-body').innerHTML = `
+      <tr>
+        <td colspan="6" class="um-empty">
+          Sign in to view users.
+        </td>
+      </tr>
+    `;
+
+    $('#um-count').textContent = 'Sign in to view users.';
+
+    feedback('You have signed out.');
+  });
+
+  // Navigate to User Management
+  navItem.addEventListener('click', () => {
+    document.querySelectorAll('.view').forEach((item) => {
+      item.classList.toggle(
+        'active',
+        item.id === 'view-user-management'
+      );
+    });
+
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.classList.toggle('active', item === navItem);
+    });
+
+    const breadcrumb = document.querySelector('#breadcrumb-current');
+
+    if (breadcrumb) {
+      breadcrumb.textContent = 'User Management';
+    }
+  });
+
+})();
