@@ -377,10 +377,12 @@ const initialsAvatar = (employee) => (
 );
 
 const personCell = (employee) => (
-  `<div class="person-cell">${initialsAvatar(employee)}` +
-  `<span><strong>${escapeHtml(employee.name)}</strong>` +
-  `<small>${escapeHtml(employee.id)}</small></span></div>`
-);
+  '<div class="person-cell">${initialsAvatar(employee)}' + 
+  '<span><button type="button" class="employee-name-link"' +
+  'data-action="view-profile" data-employee-id="${escapeHtml(employee.id)}">' +
+  '<strong>${escapeHtml(employee.name)}</strong></button>' +
+  '<small>${escapeHtml(employee.id)}</small></span></div>'
+
 
 const badge = (status) => (
   `<span class="status-pill ${
@@ -437,10 +439,12 @@ function renderEmployees(
         `
         : ''
     }
+    
     <th>EMPLOYEE</th>
     <th>EMPLOYEE ID</th>
+    <th>USER ID</th>
     <th>PASSWORD</th>
-    <th>DEPARTMENT</th>
+    <th>DEPARTMENT<th>
     <th>JOB TITLE</th>
     <th>EMPLOYMENT TYPE</th>
     <th>EMPLOYMENT STATUS</th>
@@ -472,7 +476,7 @@ function renderEmployees(
           }
 
           <td>${personCell(employee)}</td>
-          <td>${escapeHtml(employee.id)}</td>
+          <td>${escapeHtml(employee.userId || '-')}</td>
 
           <td>
             <div class="credential-cell">
@@ -1324,6 +1328,43 @@ function buildEmployeeDialog() {
           >
         </div>
 
+        <div class="employee-form-section">
+          <h3>Personal information</h3>
+        </div>
+
+        <div class="employee-form-field">
+          <label for="employee-personal-email-address">Personal email</label>
+          <input
+            id="employee-personal-email"
+            name="personalEmail"
+            type="email"
+            maxlength="120"
+          >
+        </div>
+
+
+        <div class="employee-form-field">
+          <label for="employee-date-of-birth">Date of birth/label>
+          <input
+            id="employee-dae-of-birth"
+            name="dateOfBirth"
+            type="date"
+          >
+        </div>
+
+
+        <div class="employee-form-field full">
+          <label for="employee-address">Home address</label>
+          <input 
+            id="employee-address"
+            name="address"
+            maxLength="240"
+            placeholder="Street, city, postcode"
+          >
+        </div>
+
+     
+
         <div class="employee-form-field full">
           <label for="employee-email">
             Work email <span class="required">*</span>
@@ -1862,6 +1903,55 @@ function setupEmployeeDialog() {
   return { openDialog };
 }
 
+function makeUserId(email, employeeId = ''){
+  const base = String(email || '').split('@')[0]
+    .toLowerCase().replace(/[^a-z0-9._-]/g, '') ||
+    String(employeeId || 'employee').toLowerCase();
+
+  const used = new Set(employees
+    .filter((item) => item.id !== employeeId)
+    .map((item) => String(item.userId || '').toLowerCase())));
+
+  let candidate = base;
+  let suffix = 2;
+
+  while (used.has(candidate.toLowerCase()))) {
+    candidate = '${base}${suffix++}';
+  }
+
+  return candidate;
+}
+
+function openEmployeeProfile(employee){
+  if(!employee) return;
+
+  const directoryPanel = 
+    $('#view-employees').querySelector('.panel');
+
+  let profile = ${'#employee-profile-page');
+
+  if(!profile) {
+    profile = document.createElement('section');
+    profile.id = 'employee-profile-page';
+    profile.className = 'employee-profile-page';
+
+    directoryPanel.InsertAdjacentElement(
+      'afterend',
+      profile
+    );
+  }
+
+  directoryPanel.hidden = true;
+  profile.hidden = false;
+
+
+  // Profile content is generated here.
+}
+
+
+
+
+    
 function setupEmployeeActions(employeeDialog) {
   const heading = $('#view-employees .page-heading');
   const addButton = $('#add-employee');
