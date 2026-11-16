@@ -2080,6 +2080,11 @@ function setupEmployeeActions(employeeDialog) {
           }, 1500);
         });
     }
+
+    if(button.dataset.action === 'view-profile' && employee) {
+      openEmployeeProfile(employee);
+    }
+    
   });
 
   $('#employee-rows').addEventListener('change', (event) => {
