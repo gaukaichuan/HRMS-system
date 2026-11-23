@@ -377,12 +377,12 @@ const initialsAvatar = (employee) => (
 );
 
 const personCell = (employee) => (
-  '<div class="person-cell">${initialsAvatar(employee)}' +
-  '<span><buttontype="button" class="employee-name-link"' +
-  'data-action="view-profile" data-employee-id="${escapeHtml(employee.id)}">' + 
-  '<strong>${escapeHtml(employee.name)}</strong></button>' +
-  '<small>${escapeHtml(employee.id)}</small></span></div>'
-  };
+  `<div class="person-cell">${initialsAvatar(employee)}` +
+  '<span><button type="button" class="employee-name-link" ' +
+  `data-action="view-profile" data-employee-id="${escapeHtml(employee.id)}">` +
+  `<strong>${escapeHtml(employee.name)}</strong></button>` +
+  `<small>${escapeHtml(employee.id)}</small></span></div>`
+);
 
 
 const badge = (status) => (
@@ -1916,9 +1916,9 @@ function makeUserId(email, employeeId = ''){
   let candidate = base;
   let suffix = 2;
 
-  while (used.has(candidate.toLowerCase()))) {
-    candidate = '${base}${suffix++}';
-  }
+  while (used.has(candidate.toLowerCase())) {
+  candidate = `${base}${suffix++}`;
+}
 
   return candidate;
 }
@@ -1929,7 +1929,7 @@ function openEmployeeProfile(employee){
   const directoryPanel = 
     $('#view-employees').querySelector('.panel');
 
-  let profile = ${'#employee-profile-page');
+  let profile = $('#employee-profile-page');
 
   if(!profile) {
     profile = document.createElement('section');
