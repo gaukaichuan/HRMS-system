@@ -377,11 +377,12 @@ const initialsAvatar = (employee) => (
 );
 
 const personCell = (employee) => (
-  '<div class="person-cell">${initialsAvatar(employee)}' + 
-  '<span><button type="button" class="employee-name-link"' +
-  'data-action="view-profile" data-employee-id="${escapeHtml(employee.id)}">' +
+  '<div class="person-cell">${initialsAvatar(employee)}' +
+  '<span><buttontype="button" class="employee-name-link"' +
+  'data-action="view-profile" data-employee-id="${escapeHtml(employee.id)}">' + 
   '<strong>${escapeHtml(employee.name)}</strong></button>' +
   '<small>${escapeHtml(employee.id)}</small></span></div>'
+  };
 
 
 const badge = (status) => (
@@ -1910,7 +1911,7 @@ function makeUserId(email, employeeId = ''){
 
   const used = new Set(employees
     .filter((item) => item.id !== employeeId)
-    .map((item) => String(item.userId || '').toLowerCase())));
+    .map((item) => String(item.userId || '').toLowerCase()));
 
   let candidate = base;
   let suffix = 2;
@@ -1935,7 +1936,7 @@ function openEmployeeProfile(employee){
     profile.id = 'employee-profile-page';
     profile.className = 'employee-profile-page';
 
-    directoryPanel.InsertAdjacentElement(
+    directoryPanel.insertAdjacentElement(
       'afterend',
       profile
     );
@@ -1947,10 +1948,6 @@ function openEmployeeProfile(employee){
 
   // Profile content is generated here.
 }
-
-
-
-
     
 function setupEmployeeActions(employeeDialog) {
   const heading = $('#view-employees .page-heading');
